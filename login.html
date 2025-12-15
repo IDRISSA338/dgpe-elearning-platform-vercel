@@ -4,106 +4,77 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Connexion – DGPE</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="./style.css">
 </head>
 
 <body class="login-page">
 
-<!-- NAVBAR -->
 <div class="navbar-login">
   <div class="wrap">
     <div class="logo-group">
-      <img src="assets/img/dgpe-logo.png" class="logo" alt="DGPE">
+      <img src="./assets/img/dgpe-logo.png" class="logo" alt="DGPE">
       <span class="brand">e-Learning</span>
     </div>
   </div>
 </div>
 
-<!-- TITRE -->
 <section class="hero" style="background:none;padding-top:60px;text-align:center">
   <h1>Connexion</h1>
   <p>Accédez à votre espace DGPE</p>
 </section>
 
-<!-- FORM -->
 <div class="login-wrap">
   <div class="login-card">
-
     <label>Email professionnel</label>
-    <input id="email" class="input" type="email" placeholder="prenom.nom@dgpe.gouv.ci">
+    <input id="email" type="email" class="input" placeholder="prenom.nom@dgpe.gouv.ci">
 
     <label>Mot de passe</label>
-    <input id="password" class="input" type="password">
+    <input id="password" type="password" class="input">
 
-    <button class="btn btn-primary" onclick="login()">Connexion</button>
+    <button class="btn btn-primary" id="btnLogin">Connexion</button>
     <br><br>
-    <button class="btn btn-secondary" onclick="register()">Créer un compte</button>
-
+    <button class="btn btn-secondary" id="btnRegister">Créer un compte</button>
   </div>
 </div>
 
-<!-- SUPABASE -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- 🔥 FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } 
+  from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
-<script>
-/* CONFIG SUPABASE */
-const supabase = window.supabase.createClient(
-  "https://jwkhtvqazookghqrutvu.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3a2h0dnFhem9va2docXJ1dHZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3OTk0ODYsImV4cCI6MjA4MTM3NTQ4Nn0.2WxrcxfJMUGRrsEo5ZVOZLDEsVk29NjaSSc5N3NKPbM"
-);
+  const firebaseConfig = {
+    apiKey: "AIzaSyDLeMFoRocIFnubLqhJBwtySxLttyHqs",
+    authDomain: "dgpe-elearning.firebaseapp.com",
+    projectId: "dgpe-elearning",
+    storageBucket: "dgpe-elearning.appspot.com",
+    messagingSenderId: "564422941000",
+    appId: "1:564422941000:web:f5232cd0cebafb6aaf7b7d"
+  };
 
-/* EMAIL PRO */
-function isEmailPro(email) {
-  return !/@(gmail|yahoo|hotmail|outlook|icloud)\./i.test(email);
-}
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
 
-/* INSCRIPTION */
-async function register() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const email = document.getElementById("email");
+  const password = document.getElementById("password");
 
-  if (!email || !password) {
-    alert("Veuillez remplir tous les champs.");
-    return;
-  }
-
-  if (!isEmailPro(email)) {
-    alert("Veuillez utiliser un email professionnel.");
-    return;
-  }
-
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo:
-        "https://dgpe-hub.github.io/DGPE-E-LEARNING-PLATFORM/login.html"
+  document.getElementById("btnRegister").onclick = async () => {
+    try {
+      await createUserWithEmailAndPassword(auth, email.value, password.value);
+      alert("Compte créé avec succès");
+    } catch (e) {
+      alert(e.message);
     }
-  });
+  };
 
-  if (error) {
-    alert("Erreur : " + error.message);
-  } else {
-    alert("Compte créé. Vérifiez votre email.");
-  }
-}
-
-/* CONNEXION */
-async function login() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if (error) {
-    alert("Email non confirmé ou mot de passe incorrect.");
-  } else {
-    window.location.href = "dashboard.html";
-  }
-}
+  document.getElementById("btnLogin").onclick = async () => {
+    try {
+      await signInWithEmailAndPassword(auth, email.value, password.value);
+      window.location.href = "dashboard.html";
+    } catch (e) {
+      alert("Connexion refusée");
+    }
+  };
 </script>
 
 </body>
