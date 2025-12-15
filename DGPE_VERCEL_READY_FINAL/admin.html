@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Administration – DGPE</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="./style.css">
+
+  <!-- STYLE TABLEAU -->
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+      background: white;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: center;
+      font-size: 14px;
+    }
+    th {
+      background: #0b2a4a;
+      color: white;
+      text-transform: uppercase;
+    }
+    .btn-danger {
+      background: #e53935;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-danger:hover {
+      background: #c62828;
+    }
+    .admin-container {
+      background: rgba(255,255,255,0.96);
+      padding: 30px;
+      border-radius: 14px;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ================= NAVBAR ================= -->
+<header class="navbar">
+  <div class="wrap">
+
+    <div class="logo-group">
+      <img src="assets/img/DGPE_Logo.png" class="logo" alt="DGPE">
+      <span class="brand">e-Learning</span>
+    </div>
+
+    <nav class="nav">
+      <a href="index.html">Accueil</a>
+      <a href="catalogue.html">Catalogue</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="administration.html" class="active">Administration</a>
+      <a href="#" class="pill" onclick="logout()">Déconnexion</a>
+    </nav>
+
+    <button class="burger" aria-label="Menu">
+      <span></span>
+    </button>
+
+  </div>
+</header>
+
+<!-- ================= MENU MOBILE ================= -->
+<aside class="offcanvas" aria-hidden="true">
+  <div class="close" aria-label="Fermer">✕</div>
+
+  <img src="assets/img/DGPE_Logo.png" class="logo" alt="DGPE">
+
+  <div class="menu">
+    <a href="index.html">Accueil</a>
+    <a href="catalogue.html">Catalogue</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="administration.html">Administration</a>
+    <a href="#" onclick="logout()">Déconnexion</a>
+  </div>
+</aside>
+
+<!-- ================= CONTENU ================= -->
+<section class="wrap">
+  <div class="admin-container">
+    <h1>📋 Tableau des inscriptions</h1>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Module</th>
+          <th>Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+
+      <tbody id="tableInscriptions"></tbody>
+    </table>
+
+    <div id="message" style="margin-top:20px;font-weight:bold"></div>
+  </div>
+</section>
+
+<footer class="footer">
+© 2025 DGPE – Direction Générale du Portefeuille de l’État
+</footer>
+
+<!-- ================= SCRIPTS ================= -->
+
+<!-- 🔐 AUTH DGPE -->
+<script src="assets/js/auth.js"></script>
+<script>
+  // 🔒 PROTECTION ADMIN ABSOLUE
+  protectAdminPage();
+</script>
+
+<!-- ===== SUPABASE ===== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabaseUrl = "https://hrriedjmpwjfmfimqlmx.supabase.co";
+const supabaseKey = "sb_publishable_1AnZMUSy3A4X8xIrKJOKQw_cOX40j9V";
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+/* ================= CHARGER LES INSCRIPTIONS ================= */
+async function chargerInscriptions() {
+  const { data, error } = await supabaseClient
+    .from("inscriptions")
+    .select("id, user_id, module_nom, created_at")
+    .order("created_at", { ascending: false });
+
+  const table = document.getElementById("tableInscriptions");
+  table.innerHTML = "";
+
+  if (error) {
+    table.innerHTML = "<tr><td colspan='4'>❌ Erreur de chargement</td></tr>";
+    return;
+  }
+
+  if (data.length === 0) {
+    table.innerHTML = "<tr><td colspan='4'>Aucune inscription</td></tr>";
+    return;
+  }
+
+  data.forEach(inscrit => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${inscrit.user_id}</td>
+      <td>${inscrit.module_nom}</td>
+      <td>${new Date(inscrit.created_at).toLocaleDateString()}</td>
+      <td>
+        <button class="btn-danger" onclick="supprimerInscription(${inscrit.id})">
+          ❌ Supprimer
+        </button>
+      </td>
+    `;
+
+    table.appendChild(tr);
+  });
+}
+
+/* ================= SUPPRESSION ================= */
+async function supprimerInscription(id) {
+  if (!confirm("Confirmer la suppression ?")) return;
+
+  const { error } = await supabaseClient
+    .from("inscriptions")
+    .delete()
+    .eq("id", id);
+
+  const msg = document.getElementById("message");
+
+  if (error) {
+    msg.innerText = "❌ Erreur lors de la suppression";
+    msg.style.color = "red";
+  } else {
+    msg.innerText = "✅ Inscription supprimée avec succès";
+    msg.style.color = "green";
+    chargerInscriptions();
+  }
+}
+
+/* ================= INIT ================= */
+chargerInscriptions();
+</script>
+
+<!-- Scripts généraux -->
+<script src="assets/js/app.js"></script>
+
+</body>
+</html>

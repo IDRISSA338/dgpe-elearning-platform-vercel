@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catalogue – DGPE</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- ================= NAVBAR ================= -->
+<header class="navbar">
+  <div class="wrap">
+
+    <div class="logo-group">
+      <img src="assets/img/DGPE_Logo.png" class="logo" alt="DGPE">
+      <span class="brand">e-Learning</span>
+    </div>
+
+    <!-- Menu public -->
+    <nav class="nav" id="nav-public">
+      <a href="index.html">Accueil</a>
+      <a href="catalogue.html" class="active">Catalogue</a>
+      <a href="login.html" class="pill">Connexion</a>
+    </nav>
+
+    <!-- Menu privé -->
+    <nav class="nav hidden" id="nav-private">
+      <a href="index.html">Accueil</a>
+      <a href="catalogue.html" class="active">Catalogue</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="administration.html">Administration</a>
+      <a href="#" class="pill" onclick="logout()">Déconnexion</a>
+    </nav>
+
+    <button class="burger" aria-label="Menu">
+      <span></span>
+    </button>
+
+  </div>
+</header>
+
+<!-- ================= MENU MOBILE ================= -->
+<aside class="offcanvas" aria-hidden="true">
+  <div class="close" aria-label="Fermer">✕</div>
+
+  <img src="assets/img/DGPE_Logo.png" class="logo" alt="DGPE">
+
+  <div class="menu" id="menu-public">
+    <a href="index.html">Accueil</a>
+    <a href="catalogue.html">Catalogue</a>
+    <a href="login.html">Connexion</a>
+  </div>
+
+  <div class="menu hidden" id="menu-private">
+    <a href="index.html">Accueil</a>
+    <a href="catalogue.html">Catalogue</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="administration.html">Administration</a>
+    <a href="#" onclick="logout()">Déconnexion</a>
+  </div>
+</aside>
+
+<!-- ================= CONTENU ================= -->
+<main class="page">
+
+  <section class="panel">
+    <h2>Catalogue des formations</h2>
+
+    <input id="searchInput" class="input" placeholder="Rechercher un module…">
+
+    <select id="filterDomaine" class="input">
+      <option value="">Tous domaines</option>
+      <option>Gouvernance</option>
+      <option>Management</option>
+      <option>Finance Publique</option>
+      <option>Performance</option>
+      <option>Digital</option>
+      <option>Innovation</option>
+      <option>Leadership</option>
+      <option>Communication</option>
+      <option>RSE</option>
+    </select>
+
+    <button class="btn" onclick="chargerModules()">Rechercher</button>
+  </section>
+
+  <section class="panel">
+    <h3>Résultats</h3>
+    <div class="modules-grid" id="modulesGrid"></div>
+  </section>
+
+</main>
+
+<!-- ================= FOOTER ================= -->
+<footer class="footer">
+  © 2025 DGPE – Direction Générale du Portefeuille de l’État
+</footer>
+
+<!-- ================= SCRIPTS ================= -->
+
+<!-- 🔐 AUTH DGPE -->
+<script src="assets/js/auth.js"></script>
+
+<script>
+  // Affichage menus selon session
+  if (isAuthenticated()) {
+    document.getElementById("nav-public").classList.add("hidden");
+    document.getElementById("menu-public").classList.add("hidden");
+
+    document.getElementById("nav-private").classList.remove("hidden");
+    document.getElementById("menu-private").classList.remove("hidden");
+  }
+</script>
+
+<!-- ===== SUPABASE ===== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabaseUrl = "https://hrriedjmpwjfmfimqlmx.supabase.co";
+const supabaseKey = "sb_publishable_1AnZMUSy3A4X8xIrKJOKQw_cOX40j9V";
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+async function chargerModules() {
+  const grid = document.getElementById("modulesGrid");
+  const recherche = document.getElementById("searchInput").value.toLowerCase();
+  const domaine = document.getElementById("filterDomaine").value;
+
+  grid.innerHTML = "Chargement…";
+
+  let query = supabaseClient
+    .from("modules")
+    .select("*")
+    .order("id", { ascending: true });
+
+  if (domaine) {
+    query = query.eq("domaine", domaine);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    grid.innerHTML = "❌ Erreur de chargement des modules";
+    return;
+  }
+
+  const modulesFiltres = data.filter(m =>
+    m.titre.toLowerCase().includes(recherche)
+  );
+
+  grid.innerHTML = "";
+
+  if (modulesFiltres.length === 0) {
+    grid.innerHTML = "<p>Aucun module trouvé.</p>";
+    return;
+  }
+
+  modulesFiltres.forEach(m => {
+    grid.innerHTML += `
+      <a href="module.html?id=${m.id}" class="card">
+        <h3>${m.titre}</h3>
+        <p style="color:#a7b1bd">${m.domaine} • ${m.duree}</p>
+        <p>${m.resume}</p>
+      </a>
+    `;
+  });
+}
+
+chargerModules();
+</script>
+
+<!-- Scripts généraux -->
+<script src="assets/js/app.js"></script>
+
+</body>
+</html>
