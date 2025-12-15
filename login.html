@@ -9,7 +9,7 @@
 
 <body class="login-page">
 
-<!-- ===== NAVBAR ===== -->
+<!-- ================= NAVBAR ================= -->
 <div class="navbar-login">
   <div class="wrap">
     <div class="logo-group">
@@ -19,7 +19,7 @@
   </div>
 </div>
 
-<!-- ===== TITRE ===== -->
+<!-- ================= TITRE ================= -->
 <section class="hero" style="background:none;min-height:auto;padding-top:60px;text-align:center">
   <div class="inner">
     <h1>Connexion</h1>
@@ -27,33 +27,36 @@
   </div>
 </section>
 
-<!-- ===== FORMULAIRE ===== -->
+<!-- ================= FORMULAIRE ================= -->
 <div class="login-wrap">
   <div class="login-card">
-    <h2>Se connecter</h2>
+    <h2>Accès à la plateforme</h2>
 
     <label>Email professionnel</label>
-    <input id="email" class="input" type="email" placeholder="prenom.nom@dgpe.gouv.ci">
+    <input id="email" class="input" type="email" placeholder="prenom.nom@societe.ci">
 
     <label>Mot de passe</label>
     <input id="password" class="input" type="password" placeholder="••••••••">
 
     <div class="row">
-      <label><input type="checkbox"> Se souvenir de moi</label>
+      <label>
+        <input type="checkbox"> Se souvenir de moi
+      </label>
       <a href="#">Mot de passe oublié ?</a>
     </div>
 
-    <button class="btn btn-primary" onclick="handleLogin()">Connexion</button>
+    <button class="btn btn-primary" onclick="loginUser()">Connexion</button>
     <br><br>
-    <button class="btn btn-secondary" onclick="handleRegister()">Créer un compte</button>
+    <button class="btn btn-secondary" onclick="registerUser()">Créer un compte</button>
   </div>
 </div>
 
+<!-- ================= FOOTER ================= -->
 <footer class="footer">
 © 2025 DGPE – Direction Générale du Portefeuille de l’État
 </footer>
 
-<!-- ===== POPUP ===== -->
+<!-- ================= POPUP ================= -->
 <div id="popup-overlay" class="popup-overlay hidden">
   <div class="popup-card">
     <h3 id="popup-title"></h3>
@@ -62,16 +65,23 @@
   </div>
 </div>
 
-<!-- ===== SUPABASE ===== -->
+<!-- ================= SUPABASE ================= -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-/* ================= CONFIG SUPABASE ================= */
+/* =====================================================
+   CONFIG SUPABASE
+===================================================== */
 const SUPABASE_URL = "https://hrriedjmpwjfmfimqlmx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_1AnZMUSy3A4X8xIrKJOKQw_cOX40j9V";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 
-/* ================= POPUP ================= */
+/* =====================================================
+   POPUP
+===================================================== */
 function showPopup(title, message) {
   document.getElementById("popup-title").innerText = title;
   document.getElementById("popup-message").innerText = message;
@@ -82,8 +92,10 @@ function closePopup() {
   document.getElementById("popup-overlay").classList.add("hidden");
 }
 
-/* ================= CONNEXION ================= */
-async function handleLogin() {
+/* =====================================================
+   CONNEXION
+===================================================== */
+async function loginUser() {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
 
@@ -92,13 +104,16 @@ async function handleLogin() {
     return;
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email,
     password
   });
 
   if (error) {
-    showPopup("Connexion refusée", error.message);
+    showPopup(
+      "Connexion refusée",
+      "Identifiants incorrects ou compte non confirmé."
+    );
     return;
   }
 
@@ -109,13 +124,31 @@ async function handleLogin() {
   }, 1000);
 }
 
-/* ================= INSCRIPTION ================= */
-async function handleRegister() {
+/* =====================================================
+   INSCRIPTION (AUTO-CREATION)
+===================================================== */
+async function registerUser() {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
 
   if (!email || !password) {
     showPopup("Erreur", "Veuillez remplir tous les champs.");
+    return;
+  }
+
+  /* 🔒 Bloquer emails personnels */
+  const forbiddenDomains = [
+    "@gmail.com",
+    "@yahoo.com",
+    "@hotmail.com",
+    "@outlook.com"
+  ];
+
+  if (forbiddenDomains.some(d => email.toLowerCase().endsWith(d))) {
+    showPopup(
+      "Email non autorisé",
+      "Veuillez utiliser votre email professionnel de société."
+    );
     return;
   }
 
@@ -133,7 +166,7 @@ async function handleRegister() {
   } else {
     showPopup(
       "Compte créé",
-      "Un email de confirmation vous a été envoyé. Veuillez confirmer avant de vous connecter."
+      "Un email de confirmation vous a été envoyé. Veuillez confirmer votre compte avant de vous connecter."
     );
   }
 }
