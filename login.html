@@ -9,6 +9,7 @@
 
 <body class="login-page">
 
+<!-- ================= NAVBAR ================= -->
 <div class="navbar-login">
   <div class="wrap">
     <div class="logo-group">
@@ -18,11 +19,13 @@
   </div>
 </div>
 
+<!-- ================= TITRE ================= -->
 <section class="hero" style="background:none;padding-top:60px;text-align:center">
   <h1>Connexion</h1>
   <p>Accédez à votre espace DGPE</p>
 </section>
 
+<!-- ================= FORM ================= -->
 <div class="login-wrap">
   <div class="login-card">
 
@@ -45,17 +48,18 @@
   import {
     getAuth,
     signInWithEmailAndPassword,
-    createUserWithEmailAndPassword
+    createUserWithEmailAndPassword,
+    sendEmailVerification
   } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
+  // 🔐 CONFIG FIREBASE (VALIDÉE)
   const firebaseConfig = {
-     apiKey: "AIzaSyDLeMFoRoclFnfubLqhJBvwtySxLttyHqs",
+    apiKey: "AIzaSyDLeMFoRoclFnfubLqhJBvwtySxLttyHqs",
     authDomain: "dgpe-elearning.firebaseapp.com",
     projectId: "dgpe-elearning",
-    storageBucket: "dgpe-elearning.firebasestorage.app",
+    storageBucket: "dgpe-elearning.appspot.com",
     messagingSenderId: "564422941000",
-    appId: "1:564422941000:web:f5232cd0cebafb6aaf7b7d",
-    measurementId: "G-3H1K6LJ12J"
+    appId: "1:564422941000:web:f5232cd0cebafb6aaf7b7d"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -64,21 +68,57 @@
   const emailInput = document.getElementById("email");
   const passwordInput = document.getElementById("password");
 
+  // ================= INSCRIPTION =================
   document.getElementById("btnRegister").addEventListener("click", async () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!email || !password) {
+      alert("Veuillez remplir tous les champs.");
+      return;
+    }
+
     try {
-      await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-      alert("Compte créé avec succès !");
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+      // 📩 ENVOI EMAIL DE VÉRIFICATION
+      await sendEmailVerification(userCredential.user);
+
+      alert(
+        "Compte créé avec succès ✅\n\n" +
+        "Un email de vérification vous a été envoyé.\n" +
+        "Veuillez vérifier votre boîte Outlook avant de vous connecter."
+      );
+
     } catch (error) {
-      alert(error.message);
+      alert("Erreur : " + error.message);
     }
   });
 
+  // ================= CONNEXION =================
   document.getElementById("btnLogin").addEventListener("click", async () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!email || !password) {
+      alert("Veuillez remplir tous les champs.");
+      return;
+    }
+
     try {
-      await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+      // 🔒 BLOQUER SI EMAIL NON VÉRIFIÉ
+      if (!userCredential.user.emailVerified) {
+        alert("Veuillez vérifier votre adresse email avant de vous connecter.");
+        return;
+      }
+
+      // ✅ ACCÈS AUTORISÉ
       window.location.href = "dashboard.html";
+
     } catch (error) {
-      alert(error.message);
+      alert("Connexion refusée : " + error.message);
     }
   });
 </script>
