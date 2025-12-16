@@ -36,16 +36,10 @@
     <label>Mot de passe</label>
     <input id="password" type="password" class="input">
 
-    <button class="btn btn-primary" id="btnLogin">
-      Connexion
-    </button>
-
+    <button class="btn btn-primary" id="btnLogin">Connexion</button>
     <br><br>
 
-    <button class="btn btn-secondary" id="btnRegister">
-      Créer un compte
-    </button>
-
+    <button class="btn btn-secondary" id="btnRegister">Créer un compte</button>
     <br><br>
 
     <button class="btn btn-secondary" id="btnResend" style="display:none">
@@ -57,19 +51,16 @@
 
 <!-- ================= FIREBASE ================= -->
 <script type="module">
-  import { initializeApp } from
-    "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
   import {
     getAuth,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     sendEmailVerification,
     applyActionCode
-  } from
-    "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+  } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
-  // 🔐 CONFIG FIREBASE
+  // 🔐 Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyDLeMFoRoclFnfubLqhJBvwtySxLttyHqs",
     authDomain: "dgpe-elearning.firebaseapp.com",
@@ -87,26 +78,31 @@
   const btnResend     = document.getElementById("btnResend");
 
   // ==================================================
-  // ✅ VALIDATION DU LIEN EMAIL (OBLIGATOIRE)
+  // ✅ TRAITEMENT DU LIEN EMAIL (ULTRA IMPORTANT)
   // ==================================================
-  const params  = new URLSearchParams(window.location.search);
-  const mode    = params.get("mode");
-  const oobCode = params.get("oobCode");
+  const params = new URLSearchParams(window.location.search);
+  const mode   = params.get("mode");
+  const oob    = params.get("oobCode");
 
-  if (mode === "verifyEmail" && oobCode) {
-    applyActionCode(auth, oobCode)
-      .then(() => {
+  if (mode === "verifyEmail" && oob) {
+    applyActionCode(auth, oob)
+      .then(async () => {
+        if (auth.currentUser) {
+          await auth.currentUser.reload();
+        }
+
         alert(
           "✅ Adresse email vérifiée avec succès.\n\n" +
           "Vous pouvez maintenant vous connecter."
         );
-        // Nettoyage de l’URL
+
+        // Nettoyage URL
         window.history.replaceState({}, document.title, "login.html");
       })
       .catch(() => {
         alert(
           "⚠️ Ce lien est invalide ou a déjà été utilisé.\n\n" +
-          "Veuillez demander un nouvel email de vérification."
+          "Veuillez demander un nouvel email."
         );
       });
   }
@@ -129,12 +125,12 @@
 
       alert(
         "✅ Compte créé avec succès\n\n" +
-        "📩 Un email de vérification vient d’être envoyé.\n" +
-        "⚠️ Utilisez uniquement le DERNIER mail reçu."
+        "📩 Email de vérification envoyé.\n" +
+        "⚠️ Cliquez UNIQUEMENT sur le DERNIER email reçu."
       );
 
     } catch (e) {
-      alert("Erreur : " + e.message);
+      alert(e.message);
     }
   };
 
@@ -152,16 +148,14 @@
       const userCred =
         await signInWithEmailAndPassword(auth, email, password);
 
+      await userCred.user.reload();
+
       if (!userCred.user.emailVerified) {
         btnResend.style.display = "block";
-        alert(
-          "⚠️ Adresse email non vérifiée.\n\n" +
-          "Cliquez sur « Renvoyer l’email de vérification »."
-        );
+        alert("⚠️ Adresse email non vérifiée.");
         return;
       }
 
-      // ✅ Accès autorisé
       window.location.href = "dashboard.html";
 
     } catch (e) {
@@ -172,12 +166,12 @@
   // ================= RENVOI EMAIL =================
   btnResend.onclick = async () => {
     if (!auth.currentUser) {
-      alert("Veuillez vous connecter d’abord.");
+      alert("Connectez-vous d’abord.");
       return;
     }
 
     await sendEmailVerification(auth.currentUser);
-    alert("📩 Nouvel email de vérification envoyé.\n(L’ancien lien est invalide)");
+    alert("📩 Nouvel email envoyé.\nLes anciens liens sont invalidés.");
   };
 </script>
 
