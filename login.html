@@ -9,7 +9,6 @@
 
 <body class="login-page">
 
-<!-- ================= NAVBAR ================= -->
 <div class="navbar-login">
   <div class="wrap">
     <div class="logo-group">
@@ -19,71 +18,47 @@
   </div>
 </div>
 
-<!-- ================= TITRE ================= -->
 <section class="hero" style="padding-top:60px;text-align:center">
   <h1>Connexion</h1>
   <p>Accédez à votre espace DGPE</p>
 </section>
 
-<!-- ================= FORM ================= -->
 <div class="login-wrap">
   <div class="login-card">
 
-    <label>Email professionnel</label>
-    <input
-      id="email"
-      type="email"
-      class="input"
-      placeholder="prenom.nom@dgpe.gouv.ci"
-      autocomplete="username"
-    >
+    <label>Email</label>
+    <input id="email" type="email" class="input" placeholder="prenom.nom@dgpe.gouv.ci" autocomplete="username">
 
     <label>Mot de passe</label>
-    <input
-      id="password"
-      type="password"
-      class="input"
-      autocomplete="current-password"
-    >
+    <input id="password" type="password" class="input" autocomplete="current-password">
 
-    <button class="btn btn-primary" id="btnLogin">
-      Connexion
-    </button>
-
+    <button class="btn btn-primary" id="btnLogin" type="button">Connexion</button>
     <br><br>
 
-    <!-- 🔐 Création de compte via QR -->
-    <button
-      class="btn btn-secondary"
-      id="btnQR"
-      type="button"
-    >
-      Créer un compte (QR)
-    </button>
+    <button class="btn btn-secondary" id="btnRegister" type="button">Créer un compte</button>
 
-    <p style="margin-top:14px;font-size:13px;opacity:.75;line-height:1.4">
-      ℹ️ Les comptes sont créés via QR Code et
-      <strong>activés par l’administration DGPE</strong>.
-    </p>
+    <p id="msg" style="margin-top:14px;font-size:13px;opacity:.8;line-height:1.4"></p>
 
   </div>
 </div>
 
-<!-- ================= FIREBASE ================= -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
   import {
     getAuth,
+    createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut
   } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
   import {
     getFirestore,
     doc,
-    getDoc
+    getDoc,
+    setDoc,
+    serverTimestamp
   } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-  // 🔐 Configuration Firebase
+  // ✅ Ton Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyDLeMFoRoclFnfubLqhJBvwtySxLttyHqs",
     authDomain: "dgpe-elearning.firebaseapp.com",
@@ -93,63 +68,91 @@
     appId: "1:564422941000:web:f5232cd0cebafb6aaf7b7d"
   };
 
-  const app  = initializeApp(firebaseConfig);
+  const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const db   = getFirestore(app);
+  const db = getFirestore(app);
 
-  // 🔒 Sécurité : aucune session persistante
+  // 🔒 Nettoyage session fantôme
   await signOut(auth);
 
-  const emailInput    = document.getElementById("email");
-  const passwordInput = document.getElementById("password");
+  const emailEl = document.getElementById("email");
+  const passEl  = document.getElementById("password");
+  const msgEl   = document.getElementById("msg");
+  const btnLogin = document.getElementById("btnLogin");
+  const btnRegister = document.getElementById("btnRegister");
 
-  // ================= CONNEXION =================
-  document.getElementById("btnLogin").onclick = async () => {
-    const email = emailInput.value.trim();
-    const pass  = passwordInput.value.trim();
+  function setMsg(text, ok = true) {
+    msgEl.style.color = ok ? "#0b2a4a" : "#c62828";
+    msgEl.textContent = text;
+  }
 
-    if (!email || !pass) {
-      alert("Veuillez renseigner votre email et votre mot de passe.");
-      return;
-    }
+  // =========================
+  // 🆕 INSCRIPTION (DEMANDE)
+  // =========================
+  btnRegister.onclick = async () => {
+    const email = emailEl.value.trim();
+    const password = passEl.value.trim();
+
+    if (!email || !password) return setMsg("Veuillez remplir tous les champs.", false);
+    if (password.length < 6) return setMsg("Mot de passe: минимум 6 caractères.", false);
 
     try {
-      // 1️⃣ Auth Firebase
-      const cred = await signInWithEmailAndPassword(auth, email, pass);
+      setMsg("Création du compte…");
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
 
-      // 2️⃣ Vérification côté administration (Firestore)
-      const snap = await getDoc(doc(db, "users", cred.user.uid));
+      // 🔸 Demande PENDING (admin doit valider)
+      await setDoc(doc(db, "user_requests", cred.user.uid), {
+        uid: cred.user.uid,
+        email,
+        status: "PENDING",
+        createdAt: serverTimestamp()
+      });
 
-      if (!snap.exists()) {
-        alert("⛔ Compte non reconnu par l’administration DGPE.");
-        await signOut(auth);
-        return;
-      }
+      setMsg("✅ Compte créé. Demande envoyée à l’administration (en attente de validation).");
 
-      const user = snap.data();
-
-      if (user.status !== "ACTIF") {
-        alert(
-          "⏳ Compte en attente de validation.\n\n" +
-          "Veuillez patienter jusqu’à l’activation par l’administration DGPE."
-        );
-        await signOut(auth);
-        return;
-      }
-
-      // ✅ ACCÈS AUTORISÉ
-      window.location.href = "dashboard.html";
+      // On déconnecte : tant que pas validé, pas d’accès.
+      await signOut(auth);
 
     } catch (e) {
-      alert("❌ Connexion refusée.\n\n" + e.message);
+      setMsg("❌ " + e.message, false);
     }
   };
 
-  // ================= QR =================
-  document.getElementById("btnQR").onclick = () => {
-    // ⚠️ Le QR est une IMAGE côté admin
-    // Ici on redirige simplement vers la page sécurisée
-    window.location.href = "register-qr.html";
+  // =========================
+  // 🔑 CONNEXION (CONTROLE)
+  // =========================
+  btnLogin.onclick = async () => {
+    const email = emailEl.value.trim();
+    const password = passEl.value.trim();
+
+    if (!email || !password) return setMsg("Veuillez remplir tous les champs.", false);
+
+    try {
+      setMsg("Connexion…");
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+
+      // 1) Vérifier fiche admin dans users/{uid}
+      const snap = await getDoc(doc(db, "users", cred.user.uid));
+
+      if (!snap.exists()) {
+        setMsg("⛔ Compte non activé. Attendez la validation Admin.", false);
+        await signOut(auth);
+        return;
+      }
+
+      const data = snap.data();
+      if (data.status !== "ACTIF") {
+        setMsg("⏳ Compte en attente de validation Admin.", false);
+        await signOut(auth);
+        return;
+      }
+
+      // ✅ OK
+      window.location.href = "dashboard.html";
+
+    } catch (e) {
+      setMsg("❌ Connexion refusée : " + e.message, false);
+    }
   };
 </script>
 
