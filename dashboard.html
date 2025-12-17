@@ -15,7 +15,7 @@
   <div class="wrap">
 
     <div class="logo-group">
-    <img src="assets/img/dgpe-logo.png" class="logo" alt="DGPE">
+      <img src="assets/img/dgpe-logo.png" class="logo" alt="DGPE">
       <span class="brand">e-Learning</span>
     </div>
 
@@ -24,9 +24,8 @@
       <a href="catalogue.html">Catalogue</a>
       <a href="module.html">Module</a>
       <a href="dashboard.html" class="active">Dashboard</a>
-      <a href="administration.html">Administration</a>
+      <a href="administration.html" id="adminLink">Administration</a>
 
-      <!-- 🔐 Déconnexion sécurisée -->
       <a href="#" class="pill" onclick="logout()">Déconnexion</a>
     </nav>
 
@@ -36,24 +35,6 @@
 
   </div>
 </header>
-
-<!-- ================= MENU MOBILE ================= -->
-<aside class="offcanvas" aria-hidden="true">
-  <div class="close" aria-label="Fermer">✕</div>
-
-  <img src="assets/img/DGPE_Logo.png" class="logo" alt="DGPE">
-
-  <div class="menu">
-    <a href="index.html">Accueil</a>
-    <a href="catalogue.html">Catalogue</a>
-    <a href="module.html">Module</a>
-    <a href="dashboard.html">Dashboard</a>
-    <a href="administration.html">Administration</a>
-
-    <!-- 🔐 Déconnexion sécurisée -->
-    <a href="#" onclick="logout()">Déconnexion</a>
-  </div>
-</aside>
 
 <!-- ================= CONTENU ================= -->
 <main class="page">
@@ -96,48 +77,96 @@
   © 2025 DGPE – Direction Générale du Portefeuille de l’État
 </footer>
 
-<!-- ================= SCRIPTS ================= -->
+<!-- ================= FIREBASE AUTH ================= -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import {
+    getAuth,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc
+  } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-<!-- 🔐 AUTH (OBLIGATOIRE EN PREMIER) -->
-<script src="assets/js/auth.js"></script>
-<script>
-  protectPage(); // empêche l'accès sans login
+  const firebaseConfig = {
+    apiKey: "AIzaSyDLeMFoRoclFnfubLqhJBvwtySxLttyHqs",
+    authDomain: "dgpe-elearning.firebaseapp.com",
+    projectId: "dgpe-elearning"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  const adminLink = document.getElementById("adminLink");
+
+  // 🔐 PROTECTION DASHBOARD (ASYNCHRONE)
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.replace("login.html");
+      return;
+    }
+
+    const snap = await getDoc(doc(db, "users", user.uid));
+
+    if (!snap.exists()) {
+      await signOut(auth);
+      window.location.replace("login.html");
+      return;
+    }
+
+    const data = snap.data();
+
+    if (data.status !== "ACTIF") {
+      await signOut(auth);
+      window.location.replace("login.html");
+      return;
+    }
+
+    // 🔒 Masquer Administration si pas ADMIN
+    if (data.role !== "ADMIN") {
+      adminLink.style.display = "none";
+    }
+
+    console.log("Accès dashboard autorisé :", data.email);
+  });
+
+  // 🔓 LOGOUT
+  window.logout = async () => {
+    await signOut(auth);
+    window.location.replace("login.html");
+  };
 </script>
 
-<!-- Charts -->
+<!-- ================= CHARTS ================= -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-  if (window.ApexCharts) {
+  new ApexCharts(document.querySelector("#chart-progress"), {
+    chart: { type: "line", toolbar: { show: false } },
+    series: [{ name: "Heures", data: [2, 3, 4, 3, 5, 6, 5, 4] }],
+    xaxis: {
+      categories: ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août"]
+    },
+    stroke: { curve: "smooth" },
+    colors: ["#1e66ff"]
+  }).render();
 
-    new ApexCharts(document.querySelector("#chart-progress"), {
-      chart: { type: "line", toolbar: { show: false }, background: "transparent" },
-      series: [{ name: "Heures", data: [2, 3, 4, 3, 5, 6, 5, 4] }],
-      xaxis: {
-        categories: ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août"],
-        labels: { style: { colors: "#a7b1bd" } }
-      },
-      yaxis: { labels: { style: { colors: "#a7b1bd" } } },
-      stroke: { width: 3, curve: "smooth" },
-      colors: ["#1e66ff"]
-    }).render();
-
-    new ApexCharts(document.querySelector("#chart-donut"), {
-      chart: { type: "donut", toolbar: { show: false } },
-      series: [44, 26, 30],
-      labels: ["Gouvernance", "Finance", "Leadership"],
-      colors: ["#1e66ff", "#0ea5e9", "#22c55e"],
-      legend: { labels: { colors: "#a7b1bd" } }
-    }).render();
-
-  }
+  new ApexCharts(document.querySelector("#chart-donut"), {
+    chart: { type: "donut" },
+    series: [44, 26, 30],
+    labels: ["Gouvernance", "Finance", "Leadership"],
+    colors: ["#1e66ff", "#0ea5e9", "#22c55e"]
+  }).render();
 
 });
 </script>
 
-<!-- Scripts généraux -->
 <script src="assets/js/app.js"></script>
 
 </body>
