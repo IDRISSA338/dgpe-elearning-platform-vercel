@@ -56,18 +56,11 @@
 <!-- ================= FIREBASE ================= -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-  import {
-    getAuth,
-    signInWithEmailAndPassword,
-    signOut
-  } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-  import {
-    getFirestore,
-    doc,
-    getDoc
-  } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword } from
+    "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc } from
+    "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-  // 🔐 Firebase config DGPE
   const firebaseConfig = {
     apiKey: "AIzaSyDLeMFoRoclFnfubLqhJBvwtySxLttyHqs",
     authDomain: "dgpe-elearning.firebaseapp.com",
@@ -78,15 +71,9 @@
   const auth = getAuth(app);
   const db   = getFirestore(app);
 
-  // Nettoyage session
-  await signOut(auth);
-
   const emailEl = document.getElementById("email");
   const passEl  = document.getElementById("password");
   const msgEl   = document.getElementById("msg");
-
-  const btnLogin    = document.getElementById("btnLogin");
-  const btnRegister = document.getElementById("btnRegister");
 
   function setMsg(text, ok = true) {
     msgEl.style.color = ok ? "#0b2a4a" : "#c62828";
@@ -96,7 +83,7 @@
   // =========================
   // 🔑 CONNEXION
   // =========================
-  btnLogin.onclick = async () => {
+  document.getElementById("btnLogin").onclick = async () => {
     const email = emailEl.value.trim();
     const password = passEl.value.trim();
 
@@ -109,29 +96,26 @@
 
       const cred = await signInWithEmailAndPassword(auth, email, password);
 
-      // Vérification Firestore
-      const snap = await getDoc(doc(db, "users", cred.user.uid));
+      const userSnap = await getDoc(doc(db, "users", cred.user.uid));
 
-      if (!snap.exists()) {
-        await signOut(auth);
+      if (!userSnap.exists()) {
         return setMsg(
           "⛔ Compte non activé. Veuillez attendre la validation DGPE.",
           false
         );
       }
 
-      if (snap.data().status !== "ACTIF") {
-        await signOut(auth);
+      if (userSnap.data().status !== "ACTIF") {
         return setMsg(
           "⏳ Compte en attente de validation administrative.",
           false
         );
       }
 
-      // ✅ OK
-      window.location.href = "dashboard.html";
+      // ✅ ACCÈS AUTORISÉ
+      window.location.replace("dashboard.html");
 
-    } catch (e) {
+    } catch (err) {
       setMsg("❌ Connexion refusée : identifiants incorrects.", false);
     }
   };
@@ -139,7 +123,7 @@
   // =========================
   // 📝 DEMANDE DE COMPTE
   // =========================
-  btnRegister.onclick = () => {
+  document.getElementById("btnRegister").onclick = () => {
     window.location.href = "register.html";
   };
 </script>
