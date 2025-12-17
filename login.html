@@ -30,13 +30,21 @@
   <div class="login-card">
 
     <label>Email professionnel</label>
-    <input id="email" type="email" class="input"
-           placeholder="prenom.nom@dgpe.gouv.ci"
-           autocomplete="username">
+    <input
+      id="email"
+      type="email"
+      class="input"
+      placeholder="prenom.nom@dgpe.gouv.ci"
+      autocomplete="username"
+    >
 
     <label>Mot de passe</label>
-    <input id="password" type="password" class="input"
-           autocomplete="current-password">
+    <input
+      id="password"
+      type="password"
+      class="input"
+      autocomplete="current-password"
+    >
 
     <button class="btn btn-primary" id="btnLogin" type="button">
       Connexion
@@ -48,7 +56,7 @@
       Demander un compte
     </button>
 
-    <p id="msg" style="margin-top:14px;font-size:13px;opacity:.85"></p>
+    <p id="msg" style="margin-top:14px;font-size:13px;opacity:.9"></p>
 
   </div>
 </div>
@@ -56,11 +64,17 @@
 <!-- ================= FIREBASE ================= -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword } from
-    "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from
-    "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+  import {
+    getAuth,
+    signInWithEmailAndPassword
+  } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc
+  } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
+  // ================= CONFIG =================
   const firebaseConfig = {
     apiKey: "AIzaSyDLeMFoRoclFnfubLqhJBvwtySxLttyHqs",
     authDomain: "dgpe-elearning.firebaseapp.com",
@@ -71,59 +85,62 @@
   const auth = getAuth(app);
   const db   = getFirestore(app);
 
+  // ================= ELEMENTS =================
   const emailEl = document.getElementById("email");
   const passEl  = document.getElementById("password");
   const msgEl   = document.getElementById("msg");
+  const btnLogin    = document.getElementById("btnLogin");
+  const btnRegister = document.getElementById("btnRegister");
 
   function setMsg(text, ok = true) {
     msgEl.style.color = ok ? "#0b2a4a" : "#c62828";
     msgEl.textContent = text;
   }
 
-  // =========================
-  // 🔑 CONNEXION
-  // =========================
-  document.getElementById("btnLogin").onclick = async () => {
+  // ================= CONNEXION =================
+  btnLogin.onclick = async () => {
     const email = emailEl.value.trim();
     const password = passEl.value.trim();
 
     if (!email || !password) {
-      return setMsg("Veuillez remplir tous les champs.", false);
+      setMsg("Veuillez remplir tous les champs.", false);
+      return;
     }
 
-    try {
-      setMsg("Connexion en cours…");
+    btnLogin.disabled = true;
+    setMsg("Connexion en cours…");
 
+    try {
+      // 🔐 Auth Firebase
       const cred = await signInWithEmailAndPassword(auth, email, password);
 
-      const userSnap = await getDoc(doc(db, "users", cred.user.uid));
+      // 📄 Vérification Firestore
+      const snap = await getDoc(doc(db, "users", cred.user.uid));
 
-      if (!userSnap.exists()) {
-        return setMsg(
-          "⛔ Compte non activé. Veuillez attendre la validation DGPE.",
-          false
-        );
+      if (!snap.exists()) {
+        setMsg("⛔ Compte non activé. Contactez l’administration.", false);
+        btnLogin.disabled = false;
+        return;
       }
 
-      if (userSnap.data().status !== "ACTIF") {
-        return setMsg(
-          "⏳ Compte en attente de validation administrative.",
-          false
-        );
+      if (snap.data().status !== "ACTIF") {
+        setMsg("⏳ Compte en attente de validation administrative.", false);
+        btnLogin.disabled = false;
+        return;
       }
 
       // ✅ ACCÈS AUTORISÉ
-      window.location.replace("dashboard.html");
+      window.location.href = "dashboard.html";
 
     } catch (err) {
-      setMsg("❌ Connexion refusée : identifiants incorrects.", false);
+      console.error(err);
+      setMsg("❌ Email ou mot de passe incorrect.", false);
+      btnLogin.disabled = false;
     }
   };
 
-  // =========================
-  // 📝 DEMANDE DE COMPTE
-  // =========================
-  document.getElementById("btnRegister").onclick = () => {
+  // ================= DEMANDE DE COMPTE =================
+  btnRegister.onclick = () => {
     window.location.href = "register.html";
   };
 </script>
