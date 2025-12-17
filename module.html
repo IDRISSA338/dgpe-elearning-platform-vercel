@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Module – DGPE</title>
+
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -12,6 +13,7 @@
 <!-- ================= NAVBAR ================= -->
 <header class="navbar">
   <div class="wrap">
+
     <div class="logo-group">
       <img src="assets/img/dgpe-logo.png" class="logo" alt="DGPE">
       <span class="brand">e-Learning</span>
@@ -21,37 +23,42 @@
       <a href="index.html">Accueil</a>
       <a href="catalogue.html">Catalogue</a>
       <a href="dashboard.html">Dashboard</a>
+      <a href="administration.html">Administration</a>
       <a href="#" class="pill" id="btnLogout">Déconnexion</a>
     </nav>
+
   </div>
 </header>
 
 <!-- ================= HERO ================= -->
 <section class="hero">
   <div class="inner">
-    <h1 id="titre">Chargement…</h1>
+    <h1 id="titre">Chargement du module…</h1>
     <p id="description"></p>
   </div>
 </section>
 
 <!-- ================= CONTENU ================= -->
-<section class="page">
-  <div class="panel" id="moduleCard">
+<main class="page">
+
+  <section class="panel" id="moduleCard" style="display:none">
 
     <h2 id="moduleTitle"></h2>
 
     <p><strong>Domaine :</strong> <span id="moduleDomaine"></span></p>
     <p><strong>Durée :</strong> <span id="moduleDuree"></span></p>
 
-    <p id="moduleResume" style="margin-top:12px;"></p>
+    <p id="moduleResume" style="margin-top:14px"></p>
 
-    <button class="btn btn-primary" id="btnInscrire">
+    <button class="btn btn-primary" id="btnInscription">
       ✅ S’inscrire à ce module
     </button>
 
-    <div id="message" style="margin-top:16px;font-weight:600"></div>
-  </div>
-</section>
+    <div id="message" style="margin-top:16px;font-weight:700"></div>
+
+  </section>
+
+</main>
 
 <footer class="footer">
   © 2025 DGPE – Direction Générale du Portefeuille de l’État
@@ -77,102 +84,125 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-/* ===== CONFIG ===== */
+/* ================= CONFIG ================= */
 const firebaseConfig = {
   apiKey: "AIzaSyDLeMFoRoclFnfubLqhJBvwtySxLttyHqs",
   authDomain: "dgpe-elearning.firebaseapp.com",
   projectId: "dgpe-elearning"
 };
 
-const app = initializeApp(firebaseConfig);
+const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db   = getFirestore(app);
 
-/* ===== ELEMENTS UI ===== */
-const btnInscrire = document.getElementById("btnInscrire");
-const msg = document.getElementById("message");
-const btnLogout = document.getElementById("btnLogout");
+/* ================= ELEMENTS ================= */
+const titre        = document.getElementById("titre");
+const moduleCard   = document.getElementById("moduleCard");
+const moduleTitle  = document.getElementById("moduleTitle");
+const moduleDomaine= document.getElementById("moduleDomaine");
+const moduleDuree  = document.getElementById("moduleDuree");
+const moduleResume = document.getElementById("moduleResume");
+const btnInscription = document.getElementById("btnInscription");
+const message      = document.getElementById("message");
+const btnLogout    = document.getElementById("btnLogout");
 
-/* ===== PARAM ID MODULE ===== */
+/* ================= PARAM ID ================= */
 const params = new URLSearchParams(window.location.search);
 const moduleId = params.get("id");
-let moduleData = null;
-let currentUser = null;
 
-/* ===== PROTECTION + LOAD MODULE ===== */
+if (!moduleId) {
+  titre.innerText = "❌ Module introuvable";
+  throw new Error("ID module manquant");
+}
+
+let currentUser = null;
+let moduleData  = null;
+
+/* ================= AUTH ================= */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.replace("login.html");
     return;
   }
 
-  currentUser = user;
+  const userSnap = await getDoc(doc(db, "users", user.uid));
 
-  // Charger module
-  if (!moduleId) {
-    document.getElementById("moduleCard").innerHTML =
-      "❌ Module introuvable.";
+  if (!userSnap.exists() || userSnap.data().status !== "ACTIF") {
+    await signOut(auth);
+    window.location.replace("login.html");
     return;
   }
 
-  const snap = await getDoc(doc(db, "modules", moduleId));
-  if (!snap.exists()) {
-    document.getElementById("moduleCard").innerHTML =
-      "❌ Module introuvable.";
+  currentUser = user;
+  chargerModule();
+});
+
+/* ================= CHARGER MODULE ================= */
+async function chargerModule() {
+  const ref = doc(db, "modules", moduleId);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists() || snap.data().actif !== true) {
+    titre.innerText = "❌ Module indisponible";
     return;
   }
 
   moduleData = snap.data();
 
-  document.getElementById("titre").innerText = moduleData.titre;
-  document.getElementById("moduleTitle").innerText = moduleData.titre;
-  document.getElementById("moduleDomaine").innerText = moduleData.domaine;
-  document.getElementById("moduleDuree").innerText = moduleData.duree;
-  document.getElementById("moduleResume").innerText = moduleData.resume;
-});
+  titre.innerText        = moduleData.titre;
+  moduleTitle.innerText = moduleData.titre;
+  moduleDomaine.innerText = moduleData.domaine;
+  moduleDuree.innerText   = moduleData.duree;
+  moduleResume.innerText  = moduleData.resume;
 
-/* ===== INSCRIPTION ===== */
-btnInscrire.onclick = async () => {
-  if (!currentUser || !moduleData) return;
+  moduleCard.style.display = "block";
 
-  msg.style.color = "#0b2a4a";
-  msg.innerText = "⏳ Vérification de l’inscription…";
+  verifierInscription();
+}
 
-  // Vérifier si déjà inscrit
+/* ================= VERIFIER INSCRIPTION ================= */
+async function verifierInscription() {
   const q = query(
     collection(db, "inscriptions"),
-    where("uid", "==", currentUser.uid),
+    where("userId", "==", currentUser.uid),
     where("moduleId", "==", moduleId)
   );
 
   const snap = await getDocs(q);
 
   if (!snap.empty) {
-    msg.style.color = "#c62828";
-    msg.innerText = "❌ Vous êtes déjà inscrit à ce module.";
-    return;
+    btnInscription.disabled = true;
+    btnInscription.innerText = "✔ Déjà inscrit";
   }
+}
 
-  // Enregistrer inscription
+/* ================= INSCRIPTION ================= */
+btnInscription.onclick = async () => {
+  btnInscription.disabled = true;
+  message.style.color = "#0b2a4a";
+  message.innerText = "Inscription en cours…";
+
   await addDoc(collection(db, "inscriptions"), {
-    uid: currentUser.uid,
+    userId: currentUser.uid,
     email: currentUser.email,
-    moduleId,
+    moduleId: moduleId,
     moduleTitre: moduleData.titre,
-    domaine: moduleData.domaine,
     createdAt: serverTimestamp()
   });
 
-  msg.style.color = "#1b5e20";
-  msg.innerText = "✅ Inscription validée avec succès.";
+  message.style.color = "#1b5e20";
+  message.innerText = "✅ Inscription validée avec succès.";
+  btnInscription.innerText = "✔ Inscrit";
 };
 
-/* ===== LOGOUT ===== */
+/* ================= LOGOUT ================= */
 btnLogout.onclick = async () => {
   await signOut(auth);
   window.location.replace("login.html");
 };
+
 </script>
 
+<script src="assets/js/app.js"></script>
 </body>
 </html>
