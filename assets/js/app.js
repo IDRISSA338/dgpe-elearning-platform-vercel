@@ -1,64 +1,67 @@
 /* =====================================================
-   ✅ CONNEXION À SUPABASE
+   🔐 FIREBASE – DGPE (APP GLOBAL)
 ===================================================== */
-const supabaseUrl = "https://hrriedjmpwjfmfimqlmx.supabase.co";
-const supabaseKey = "sb_publishable_1AnZMUSy3A4X8xIrKJOKQw_cOX40j9V";
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+/* ================= CONFIG FIREBASE ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyDLeMFoRoclFnfubLqhJBvwtySxLttyHqs",
+  authDomain: "dgpe-elearning.firebaseapp.com",
+  projectId: "dgpe-elearning"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
 
 /* =====================================================
-   ✅ INSCRIPTION
+   🔑 CONNEXION (LOGIN)
 ===================================================== */
-async function register() {
-  const email = document.querySelector('input[type="email"]').value;
-  const password = document.querySelector('input[type="password"]').value;
+window.login = async function () {
+  const email    = document.querySelector('input[type="email"]').value.trim();
+  const password = document.querySelector('input[type="password"]').value.trim();
 
   if (!email || !password) {
     alert("❌ Veuillez remplir tous les champs.");
     return;
   }
 
-  const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password,
-  });
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
 
-  if (error) {
-    alert("❌ Erreur inscription : " + error.message);
-  } else {
-    alert("✅ Compte créé ! Vérifiez votre email.");
-  }
-}
+    // 🔎 Vérification Firestore
+    const ref  = doc(db, "users", cred.user.uid);
+    const snap = await getDoc(ref);
 
-/* =====================================================
-   ✅ CONNEXION
-===================================================== */
-async function login() {
-  const email = document.querySelector('input[type="email"]').value;
-  const password = document.querySelector('input[type="password"]').value;
+    if (!snap.exists() || snap.data().status !== "ACTIF") {
+      alert("⛔ Compte non activé par la DGPE.");
+      return;
+    }
 
-  if (!email || !password) {
-    alert("❌ Veuillez remplir tous les champs.");
-    return;
-  }
-
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) {
-    alert("❌ Erreur connexion : " + error.message);
-  } else {
+    // ✅ OK
     window.location.href = "dashboard.html";
+
+  } catch (err) {
+    alert("❌ Connexion refusée : identifiants incorrects.");
   }
-}
+};
 
 /* =====================================================
-   ✅ MENU MOBILE / OFFCANVAS
+   📱 MENU MOBILE / OFFCANVAS
 ===================================================== */
-const burger = document.querySelector('.burger');
+const burger    = document.querySelector('.burger');
 const offcanvas = document.querySelector('.offcanvas');
-const closeBtn = document.querySelector('.offcanvas .close');
+const closeBtn  = document.querySelector('.offcanvas .close');
 
 if (burger && offcanvas) {
   burger.addEventListener('click', () => {
@@ -75,7 +78,7 @@ if (burger && offcanvas) {
 }
 
 /* =====================================================
-   ✅ ANIMATION REVEAL
+   ✨ ANIMATION REVEAL
 ===================================================== */
 function reveal() {
   document.querySelectorAll('.card, .panel').forEach(el => {
@@ -90,14 +93,14 @@ window.addEventListener('scroll', reveal);
 window.addEventListener('load', reveal);
 
 /* =====================================================
-   ✅ CATALOGUE DYNAMIQUE
+   📚 CATALOGUE DYNAMIQUE
 ===================================================== */
 async function loadCatalogue() {
   const grid = document.querySelector('.modules-grid');
   if (!grid) return;
 
   try {
-    const res = await fetch('./assets/data/modules.json');
+    const res  = await fetch('./assets/data/modules.json');
     const data = await res.json();
 
     grid.innerHTML = data.modules.map(m => `
@@ -107,6 +110,7 @@ async function loadCatalogue() {
         <p>${m.resume}</p>
       </a>
     `).join('');
+
   } catch (e) {
     grid.innerHTML = `<div class="panel">❌ Erreur lors du chargement.</div>`;
   }
