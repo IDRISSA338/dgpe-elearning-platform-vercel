@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Inscriptions – DGPE</title>
+
+  <link rel="stylesheet" href="./style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 14px;
+      text-align: center;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    th {
+      background: #0b2a4a;
+      color: white;
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background: #f3f6fa;
+    }
+
+    .btn-danger {
+      background: #e53935;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-danger:hover {
+      background: #c62828;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+  <div class="wrap">
+    <div class="logo-group">
+      <img src="./assets/img/dgpe-logo.png" class="logo" alt="DGPE">
+      <span class="brand">e-Learning</span>
+    </div>
+
+    <nav class="nav">
+      <a href="administration.html">Administration</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="login.html" class="pill">Déconnexion</a>
+    </nav>
+  </div>
+</div>
+
+<!-- CONTENU -->
+<div class="page">
+  <div class="panel">
+    <h2>📋 Inscriptions aux modules</h2>
+    <p>Gestion des inscriptions utilisateurs</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Module</th>
+          <th>Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="tableInscriptions">
+        <tr>
+          <td colspan="4" style="color:#999">Aucune inscription pour le moment</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>
