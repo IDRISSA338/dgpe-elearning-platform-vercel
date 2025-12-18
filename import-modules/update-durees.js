@@ -55,7 +55,13 @@ async function corrigerDurees() {
 
   for (const docSnap of snap.docs) {
     const data = docSnap.data();
-    const titreModule = data.titre || data.nom;
+  const titreModule =
+  data.titre ||
+  data.title ||
+  data.nom ||
+  data.name ||
+  "";
+
 
     if (!titreModule) continue;
 
