@@ -9,10 +9,8 @@
 
 <body>
 
-<!-- ================= NAVBAR ================= -->
 <header class="navbar">
   <div class="wrap">
-
     <div class="logo-group">
       <img src="assets/img/dgpe-logo.png" class="logo" alt="DGPE">
       <span class="brand">e-Learning</span>
@@ -31,13 +29,10 @@
       <a href="administration.html">Administration</a>
       <a href="#" class="pill" id="btnLogout">Déconnexion</a>
     </nav>
-
   </div>
 </header>
 
-<!-- ================= CONTENU ================= -->
 <main class="page">
-
   <section class="panel">
     <h2>Catalogue des formations</h2>
 
@@ -60,20 +55,16 @@
     <h3>Résultats</h3>
     <div class="modules-grid" id="modulesGrid"></div>
   </section>
-
 </main>
 
 <footer class="footer">
   © 2025 DGPE – Direction Générale du Portefeuille de l’État
 </footer>
 
-<!-- ================= FIREBASE ================= -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where }
-  from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut }
-  from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
 /* ================= CONFIG ================= */
 const firebaseConfig = {
@@ -87,10 +78,13 @@ const db   = getFirestore(app);
 const auth = getAuth(app);
 
 /* ================= UI ================= */
-const grid       = document.getElementById("modulesGrid");
-const navPublic  = document.getElementById("nav-public");
-const navPrivate = document.getElementById("nav-private");
-const btnLogout  = document.getElementById("btnLogout");
+const grid         = document.getElementById("modulesGrid");
+const navPublic    = document.getElementById("nav-public");
+const navPrivate   = document.getElementById("nav-private");
+const btnLogout    = document.getElementById("btnLogout");
+const searchInput  = document.getElementById("searchInput");
+const filterDomaine= document.getElementById("filterDomaine");
+const btnSearch    = document.getElementById("btnSearch");
 
 /* ================= AUTH ================= */
 onAuthStateChanged(auth, user => {
@@ -98,91 +92,113 @@ onAuthStateChanged(auth, user => {
   navPrivate.classList.toggle("hidden", !user);
 });
 
-btnLogout.onclick = async () => {
+btnLogout?.addEventListener("click", async (e) => {
+  e.preventDefault();
   await signOut(auth);
   location.href = "login.html";
-};
+});
 
-/* ================= NORMALISATION ================= */
+/* ================= NORMALIZE ================= */
 function normalize(txt = "") {
-  return txt
+  return String(txt)
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/&/g, "et")
+    .replace(/&/g, " et ")
+    .replace(/[:]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
 /* ================= DURÉES OFFICIELLES DGPE ================= */
-const DUREES_DGPE = {
-  "gouvernance strategique et analyse financiere": "4 j",
-  "pilotage strategique": "4 j",
-  "audit et conformite": "3 j",
-  "performance et kpi": "2 j",
-  "transformation digitale": "3 j",
-  "ia et decision": "2 j",
-  "leadership": "2 j",
-  "communication de crise": "2 j",
-  "rse concevoir et piloter une strategie durable": "3 j",
-  "manager le changement durable": "2 j"
+const dureesDGPE = {
+  [normalize("Gouvernance stratégique et analyse financière")]: "4 j",
+  [normalize("Pilotage stratégique")]: "4 j",
+  [normalize("Audit & conformité")]: "3 j",
+  [normalize("Performance & KPI")]: "2 j",
+  [normalize("Transformation digitale")]: "3 j",
+  [normalize("IA & Décision")]: "2 j",
+  [normalize("Leadership")]: "2 j",
+  [normalize("Communication de crise")]: "2 j",
+  [normalize("RSE : Concevoir et piloter une stratégie durable")]: "3 j",
+  [normalize("Manager le changement durable")]: "2 j"
 };
 
-/* ================= CHARGER MODULES ================= */
-async function chargerModules() {
-  const recherche = searchInput.value.toLowerCase();
-  const domaine   = filterDomaine.value;
+function getTitre(m = {}) {
+  return m.titre || m.title || m.nom || m.name || "";
+}
 
+function getDureeAffichee(m = {}) {
+  const titre = getTitre(m);
+  const official = dureesDGPE[normalize(titre)];
+  if (official) return official;
+
+  if (m.duree) return m.duree;
+  if (m.nbHeures) return `${m.nbHeures} h`;
+  if (m.heures) return `${m.heures} h`;
+  return "—";
+}
+
+/* ================= DATA ================= */
+let ALL = []; // cache local
+
+async function loadAllModules() {
   grid.innerHTML = "Chargement des modules…";
+  const snap = await getDocs(collection(db, "modules"));
+  ALL = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
 
+/* ================= RENDER ================= */
+function render() {
+  const recherche = normalize(searchInput.value);
+  const domaine = (filterDomaine.value || "").trim();
+
+  const filtered = ALL.filter(m => {
+    // "actif" : si absent → on considère actif
+    if (m.actif === false) return false;
+
+    const titre = getTitre(m);
+    if (!titre) return false;
+
+    if (domaine && (m.domaine || "").trim() !== domaine) return false;
+
+    if (recherche && !normalize(titre).includes(recherche)) return false;
+
+    return true;
+  });
+
+  if (!filtered.length) {
+    grid.innerHTML = "<p>Aucun module trouvé.</p>";
+    return;
+  }
+
+  grid.innerHTML = filtered.map(m => {
+    const titre = getTitre(m);
+    const dureeAffichee = getDureeAffichee(m);
+
+    return `
+      <a href="module.html?id=${m.id}" class="card">
+        <h3>${titre}</h3>
+        <p style="color:#a7b1bd">${m.domaine || "—"} • ${dureeAffichee}</p>
+        <p>${m.resume || ""}</p>
+      </a>
+    `;
+  }).join("");
+}
+
+/* ================= EVENTS ================= */
+btnSearch.addEventListener("click", render);
+searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") render(); });
+
+(async () => {
   try {
-    let q = query(
-      collection(db, "modules"),
-      where("actif", "==", true)
-    );
-
-    if (domaine) {
-      q = query(
-        collection(db, "modules"),
-        where("actif", "==", true),
-        where("domaine", "==", domaine)
-      );
-    }
-
-    const snap = await getDocs(q);
-    let html = "";
-
-    snap.forEach(docu => {
-      const m = docu.data();
-      if (!m.titre) return;
-
-      if (recherche && !m.titre.toLowerCase().includes(recherche)) return;
-
-      const key = normalize(m.titre);
-      const dureeAffichee = DUREES_DGPE[key] || "—";
-
-      html += `
-        <a href="module.html?id=${docu.id}" class="card">
-          <h3>${m.titre}</h3>
-          <p style="color:#a7b1bd">
-            ${m.domaine || "—"} • ${dureeAffichee}
-          </p>
-          <p>${m.resume || ""}</p>
-        </a>
-      `;
-    });
-
-    grid.innerHTML = html || "<p>Aucun module trouvé.</p>";
-
+    await loadAllModules();
+    render();
   } catch (e) {
     console.error(e);
     grid.innerHTML = "❌ Erreur lors du chargement.";
   }
-}
-
-/* ================= EVENTS ================= */
-btnSearch.onclick = chargerModules;
-chargerModules();
+})();
 </script>
 
 </body>
