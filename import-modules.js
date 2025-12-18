@@ -1,4 +1,3 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 import {
   getFirestore,
   collection,
@@ -6,20 +5,6 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-/* ===============================
-   CONFIG FIREBASE (OBLIGATOIRE)
-================================ */
-const firebaseConfig = {
-  apiKey: "XXXX",
-  authDomain: "dgpe-elearning.firebaseapp.com",
-  projectId: "dgpe-elearning",
-  storageBucket: "dgpe-elearning.appspot.com",
-  messagingSenderId: "XXXX",
-  appId: "XXXX"
-};
-
-// 🔥 INITIALISATION
-initializeApp(firebaseConfig);
 const db = getFirestore();
 
 /* ===============================
@@ -39,14 +24,13 @@ const MODULES_DGPE = [
 ];
 
 /* ===============================
-   IMPORT FIRESTORE
+   IMPORT DANS FIRESTORE
 ================================ */
 async function creerModulesDGPE() {
   const log = document.getElementById("log");
   let count = 0;
 
-  log.textContent += "✅ Firebase initialisé\n";
-  log.textContent += "📦 Création des modules...\n\n";
+  log.textContent += "\n🔗 Connexion Firestore...\n";
 
   for (const m of MODULES_DGPE) {
     await addDoc(collection(db, "modules"), {
@@ -62,8 +46,8 @@ async function creerModulesDGPE() {
   }
 
   log.textContent += "\n=============================\n";
-  log.textContent += `Modules créés : ${count}\n`;
-  log.textContent += "🎉 TERMINÉ 🎉\n";
+  log.textContent += `🎉 Modules créés : ${count}\n`;
+  log.textContent += "✅ TERMINÉ\n";
 }
 
 creerModulesDGPE();
