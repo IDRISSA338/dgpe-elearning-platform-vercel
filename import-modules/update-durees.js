@@ -17,90 +17,83 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 
-/* ================= UI LOG ================= */
+/* ================= LOG UI ================= */
 const logBox = document.getElementById("log");
-function log(txt) {
-  console.log(txt);
-  if (logBox) logBox.textContent += "\n" + txt;
+function log(msg) {
+  console.log(msg);
+  if (logBox) logBox.textContent += "\n" + msg;
 }
 
 /* ================= NORMALISATION ================= */
 function normalize(txt = "") {
-  return String(txt)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+  return txt.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/&/g, " et ")
     .replace(/[:]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-/* ================= MAPPING OFFICIEL DGPE ================= */
-/* ➜ MATCH PAR MOT-CLÉ (robuste) */
-const REGLES_DGPE = [
-  { key: "gouvernance", duree: "4 j" },
-  { key: "pilotage", duree: "4 j" },
-  { key: "audit", duree: "3 j" },
-  { key: "conformite", duree: "3 j" },
-  { key: "performance", duree: "2 j" },
-  { key: "kpi", duree: "2 j" },
-  { key: "transformation digitale", duree: "3 j" },
-  { key: "intelligence artificielle", duree: "2 j" },
-  { key: "ia", duree: "2 j" },
-  { key: "leadership", duree: "2 j" },
-  { key: "communication de crise", duree: "2 j" },
-  { key: "rse", duree: "3 j" },
-  { key: "developpement durable", duree: "3 j" },
-  { key: "changement", duree: "2 j" }
+/* ================= REGLES DGPE ================= */
+const REGLES = [
+  { k: "gouvernance", d: "4 j" },
+  { k: "pilotage", d: "4 j" },
+  { k: "audit", d: "3 j" },
+  { k: "conformite", d: "3 j" },
+  { k: "performance", d: "2 j" },
+  { k: "kpi", d: "2 j" },
+  { k: "transformation digitale", d: "3 j" },
+  { k: "ia", d: "2 j" },
+  { k: "intelligence artificielle", d: "2 j" },
+  { k: "leadership", d: "2 j" },
+  { k: "communication de crise", d: "2 j" },
+  { k: "rse", d: "3 j" },
+  { k: "changement", d: "2 j" }
 ];
 
-function trouverDureeOfficielle(titre) {
+function trouverDuree(titre) {
   const t = normalize(titre);
-  for (const r of REGLES_DGPE) {
-    if (t.includes(r.key)) return r.duree;
+  for (const r of REGLES) {
+    if (t.includes(r.k)) return r.d;
   }
   return null;
 }
 
-/* ================= TRAITEMENT ================= */
-async function corrigerDurees() {
+/* ================= EXECUTION ================= */
+async function run() {
   log("Connexion à Firestore…");
 
-  const snap = await getDocs(collection(db, "modules"));
-  let total = 0;
-  let corriges = 0;
+  try {
+    const snap = await getDocs(collection(db, "modules"));
+    log(`Modules trouvés : ${snap.size}`);
 
-  for (const d of snap.docs) {
-    total++;
-    const data = d.data();
-    const titre =
-      data.titre || data.title || data.nom || data.name || "";
+    let corriges = 0;
 
-    if (!titre) continue;
+    for (const d of snap.docs) {
+      const m = d.data();
+      const titre = m.titre || "";
 
-    const dureeOfficielle = trouverDureeOfficielle(titre);
-    if (!dureeOfficielle) continue;
+      const duree = trouverDuree(titre);
+      if (!duree) continue;
 
-    const ref = doc(db, "modules", d.id);
+      await updateDoc(doc(db, "modules", d.id), {
+        duree: duree,
+        nbHeures: null,
+        heures: null
+      });
 
-    await updateDoc(ref, {
-      duree: dureeOfficielle,
-      nbHeures: null,
-      heures: null
-    });
+      corriges++;
+      log(`✔ ${titre} → ${duree}`);
+    }
 
-    corriges++;
-    log(`✔ ${titre} → ${dureeOfficielle}`);
+    log("====== TERMINÉ ======");
+    log(`Modules corrigés : ${corriges}`);
+
+  } catch (err) {
+    console.error(err);
+    log("❌ ERREUR FIRESTORE :");
+    log(err.message);
   }
-
-  log("");
-  log("====== TERMINÉ ======");
-  log(`Modules analysés : ${total}`);
-  log(`Modules corrigés : ${corriges}`);
 }
 
-corrigerDurees().catch(e => {
-  console.error(e);
-  log("❌ ERREUR : " + e.message);
-});
+run();
