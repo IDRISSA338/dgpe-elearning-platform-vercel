@@ -2,14 +2,13 @@ import {
   getFirestore,
   collection,
   getDocs,
-  updateDoc
+  updateDoc,
+  doc
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 
-/* ==============================
-   FIREBASE CONFIG
-============================== */
+/* ===== CONFIG FIREBASE ===== */
 const firebaseConfig = {
   apiKey: "AIzaSyDLeMFoRoclFnfubLqhJBvwtySxLttyHqs",
   authDomain: "dgpe-elearning.firebaseapp.com",
@@ -19,77 +18,60 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ==============================
-   MAPPING OFFICIEL DGPE 2026
-============================== */
-const dureesDGPE = {
-  "Gouvernance stratégique et analyse financière": "4 j",
-  "Pilotage stratégique": "4 j",
-  "Audit & conformité": "3 j",
-  "Performance & KPI": "2 j",
-  "Transformation digitale": "3 j",
-  "IA & Décision": "2 j",
-  "Leadership": "2 j",
-  "Communication de crise": "2 j",
-  "RSE : Concevoir et piloter une stratégie durable": "3 j",
-  "Manager le changement durable": "2 j"
-};
-
-/* ==============================
-   NORMALISATION DES TITRES
-============================== */
-function normalize(text) {
-  return text
+/* ===== NORMALISATION TEXTE ===== */
+function normalize(txt = "") {
+  return txt
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/&/g, "et")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
-/* ==============================
-   CORRECTION DES DURÉES
-============================== */
+/* ===== MAPPING OFFICIEL DGPE 2026 ===== */
+const dureesDGPE = {
+  "gouvernance strategique et analyse financiere": "4 j",
+  "pilotage strategique": "4 j",
+  "audit et conformite": "3 j",
+  "performance et kpi": "2 j",
+  "transformation digitale": "3 j",
+  "ia et decision": "2 j",
+  "leadership": "2 j",
+  "communication de crise": "2 j",
+  "rse concevoir et piloter une strategie durable": "3 j",
+  "manager le changement durable": "2 j"
+};
+
+/* ===== CORRECTION ===== */
 async function corrigerDurees() {
   const snap = await getDocs(collection(db, "modules"));
   let count = 0;
 
-  for (const docSnap of snap.docs) {
-    const data = docSnap.data();
-  const titreModule =
-  data.titre ||
-  data.title ||
-  data.nom ||
-  data.name ||
-  "";
+  for (const d of snap.docs) {
+    const data = d.data();
 
+    const titreBrut =
+      data.titre ||
+      data.title ||
+      data.nom ||
+      data.name ||
+      "";
 
-    if (!titreModule) continue;
+    const titreNormalise = normalize(titreBrut);
 
-    const cleCorrespondante = Object.keys(dureesDGPE).find(
-      key => normalize(key) === normalize(titreModule)
-    );
+    const duree = dureesDGPE[titreNormalise];
 
-    if (cleCorrespondante) {
-      const nouvelleDuree = dureesDGPE[cleCorrespondante];
-
-      if (data.duree !== nouvelleDuree) {
-        await updateDoc(docSnap.ref, {
-          duree: nouvelleDuree
-        });
-
-        console.log(`✔ ${titreModule} → ${nouvelleDuree}`);
-        count++;
-      }
+    if (duree && data.duree !== duree) {
+      await updateDoc(doc(db, "modules", d.id), { duree });
+      count++;
+      console.log(`✔ ${titreBrut} → ${duree}`);
+    } else {
+      console.log(`⏭ Ignoré : "${titreBrut}"`);
     }
   }
 
-  document.body.insertAdjacentHTML(
-    "beforeend",
-    `<p>✅ ${count} modules mis à jour.</p>`
-  );
+  document.body.innerHTML += `<p>✅ ${count} modules mis à jour.</p>`;
 }
 
-/* ==============================
-   LANCEMENT
-============================== */
 corrigerDurees();
