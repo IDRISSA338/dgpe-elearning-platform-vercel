@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connexion – DGPE</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+
+<body class="login-page">
+
+<!-- ================= NAVBAR ================= -->
+<div class="navbar-login">
+  <div class="wrap">
+    <div class="logo-group">
+      <img src="assets/img/dgpe-logo.png" class="logo" alt="DGPE">
+      <span class="brand">e-Learning</span>
+    </div>
+  </div>
+</div>
+
+<!-- ================= TITRE ================= -->
+<section class="hero" style="background:none;min-height:auto;padding-top:60px;text-align:center">
+  <div class="inner">
+    <h1>Connexion</h1>
+    <p>Accès réservé aux administrateurs des sociétés</p>
+  </div>
+</section>
+
+<!-- ================= FORMULAIRE ================= -->
+<div class="login-wrap">
+  <div class="login-card">
+    <h2>Accès à la plateforme</h2>
+
+    <label>Email professionnel</label>
+    <input
+      id="email"
+      class="input"
+      type="email"
+      placeholder="prenom.nom@societe.ci"
+      autocomplete="email"
+    >
+
+    <label>Mot de passe</label>
+    <input
+      id="password"
+      class="input"
+      type="password"
+      placeholder="••••••••"
+      autocomplete="current-password"
+    >
+
+    <div class="row">
+      <label>
+        <input type="checkbox"> Se souvenir de moi
+      </label>
+      <a href="#">Mot de passe oublié ?</a>
+    </div>
+
+    <button class="btn btn-primary" onclick="loginUser()">Connexion</button>
+    <br><br>
+    <button class="btn btn-secondary" onclick="registerUser()">Créer un compte</button>
+  </div>
+</div>
+
+<!-- ================= FOOTER ================= -->
+<footer class="footer">
+© 2025 DGPE – Direction Générale du Portefeuille de l’État
+</footer>
+
+<!-- ================= POPUP ================= -->
+<div id="popup-overlay" class="popup-overlay hidden">
+  <div class="popup-card">
+    <h3 id="popup-title"></h3>
+    <p id="popup-message"></p>
+    <button onclick="closePopup()">OK</button>
+  </div>
+</div>
+
+<!-- ================= SUPABASE SDK ================= -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+/* =====================================================
+   SUPABASE CONFIG
+===================================================== */
+const SUPABASE_URL = "https://hrriedjmpwjfmfimqlmx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_1AnZMUSy3A4X8xIrKJOKQw_cOX40j9V";
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+/* =====================================================
+   POPUP
+===================================================== */
+function showPopup(title, message) {
+  document.getElementById("popup-title").innerText = title;
+  document.getElementById("popup-message").innerText = message;
+  document.getElementById("popup-overlay").classList.remove("hidden");
+}
+
+function closePopup() {
+  document.getElementById("popup-overlay").classList.add("hidden");
+}
+
+/* =====================================================
+   CONNEXION
+===================================================== */
+async function loginUser() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!email || !password) {
+    showPopup("Erreur", "Veuillez remplir tous les champs.");
+    return;
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    showPopup(
+      "Connexion refusée",
+      "Identifiants incorrects ou compte non confirmé."
+    );
+    return;
+  }
+
+  showPopup("Connexion réussie", "Bienvenue sur la plateforme DGPE.");
+
+  setTimeout(() => {
+    window.location.href = "dashboard.html";
+  }, 1000);
+}
+
+/* =====================================================
+   INSCRIPTION (SUPABASE EMAIL CONFIRMATION)
+===================================================== */
+async function registerUser() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!email || !password) {
+    showPopup("Erreur", "Veuillez remplir tous les champs.");
+    return;
+  }
+
+  // ❌ Bloquer emails personnels
+  const forbiddenDomains = [
+    "@gmail.com",
+    "@yahoo.com",
+    "@hotmail.com",
+    "@outlook.com"
+  ];
+
+  if (forbiddenDomains.some(d => email.toLowerCase().endsWith(d))) {
+    showPopup(
+      "Email non autorisé",
+      "Veuillez utiliser votre email professionnel de société."
+    );
+    return;
+  }
+
+  // ✅ SUPABASE SIGN UP + EMAIL CONFIRMATION
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo:
+        "https://dgpe-hub.github.io/DGPE-E-LEARNING-PLATFORM/login.html"
+    }
+  });
+
+  if (error) {
+    showPopup("Erreur inscription", error.message);
+  } else {
+    showPopup(
+      "Compte créé",
+      "Un email de confirmation vous a été envoyé. Veuillez confirmer votre compte avant de vous connecter."
+    );
+  }
+}
+</script>
+
+</body>
+</html>
