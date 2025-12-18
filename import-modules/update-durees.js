@@ -18,30 +18,32 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ===== NORMALISATION TEXTE ===== */
+/* ===== NORMALISATION ===== */
 function normalize(txt = "") {
   return txt
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/&/g, "et")
+    .replace(/[^a-z0-9 ]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-/* ===== MAPPING OFFICIEL DGPE 2026 ===== */
-const dureesDGPE = {
-  "gouvernance strategique et analyse financiere": "4 j",
-  "pilotage strategique": "4 j",
-  "audit et conformite": "3 j",
-  "performance et kpi": "2 j",
-  "transformation digitale": "3 j",
-  "ia et decision": "2 j",
-  "leadership": "2 j",
-  "communication de crise": "2 j",
-  "rse concevoir et piloter une strategie durable": "3 j",
-  "manager le changement durable": "2 j"
-};
+/* ===== RÈGLES OFFICIELLES DGPE 2026 ===== */
+const rules = [
+  { match: ["gouvernance"], duree: "4 j" },
+  { match: ["pilotage"], duree: "4 j" },
+  { match: ["audit"], duree: "3 j" },
+  { match: ["performance", "kpi"], duree: "2 j" },
+  { match: ["transformation", "digitale"], duree: "3 j" },
+  { match: ["ia"], duree: "2 j" },
+  { match: ["decision"], duree: "2 j" },
+  { match: ["leadership"], duree: "2 j" },
+  { match: ["crise"], duree: "2 j" },
+  { match: ["rse"], duree: "3 j" },
+  { match: ["changement"], duree: "2 j" }
+];
 
 /* ===== CORRECTION ===== */
 async function corrigerDurees() {
@@ -50,24 +52,21 @@ async function corrigerDurees() {
 
   for (const d of snap.docs) {
     const data = d.data();
+    const titre = data.titre || data.title || data.nom || "";
+    const t = normalize(titre);
 
-    const titreBrut =
-      data.titre ||
-      data.title ||
-      data.nom ||
-      data.name ||
-      "";
+    const rule = rules.find(r =>
+      r.match.every(word => t.includes(word))
+    );
 
-    const titreNormalise = normalize(titreBrut);
-
-    const duree = dureesDGPE[titreNormalise];
-
-    if (duree && data.duree !== duree) {
-      await updateDoc(doc(db, "modules", d.id), { duree });
+    if (rule && data.duree !== rule.duree) {
+      await updateDoc(doc(db, "modules", d.id), {
+        duree: rule.duree
+      });
+      console.log(`✔ ${titre} → ${rule.duree}`);
       count++;
-      console.log(`✔ ${titreBrut} → ${duree}`);
     } else {
-      console.log(`⏭ Ignoré : "${titreBrut}"`);
+      console.log(`⏭ Ignoré : ${titre}`);
     }
   }
 
