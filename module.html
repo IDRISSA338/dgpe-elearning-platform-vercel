@@ -2,9 +2,8 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Module – DGPE</title>
-
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -13,7 +12,6 @@
 <!-- ================= NAVBAR ================= -->
 <header class="navbar">
   <div class="wrap">
-
     <div class="logo-group">
       <img src="assets/img/dgpe-logo.png" class="logo" alt="DGPE">
       <span class="brand">e-Learning</span>
@@ -23,39 +21,15 @@
       <a href="index.html">Accueil</a>
       <a href="catalogue.html">Catalogue</a>
       <a href="dashboard.html">Dashboard</a>
-      <a href="administration.html">Administration</a>
-      <a href="#" class="pill" id="btnLogout">Déconnexion</a>
     </nav>
-
   </div>
 </header>
-
-<!-- ================= HERO ================= -->
-<section class="hero">
-  <div class="inner">
-    <h1 id="titre">Chargement du module…</h1>
-    <p id="description"></p>
-  </div>
-</section>
 
 <!-- ================= CONTENU ================= -->
 <main class="page">
 
-  <section class="panel" id="moduleCard" style="display:none">
-
-    <h2 id="moduleTitle"></h2>
-
-    <p><strong>Domaine :</strong> <span id="moduleDomaine"></span></p>
-    <p><strong>Durée :</strong> <span id="moduleDuree"></span></p>
-
-    <p id="moduleResume" style="margin-top:14px"></p>
-
-    <button class="btn btn-primary" id="btnInscription">
-      ✅ S’inscrire à ce module
-    </button>
-
-    <div id="message" style="margin-top:16px;font-weight:700"></div>
-
+  <section class="panel" id="modulePanel">
+    <p>Chargement du module…</p>
   </section>
 
 </main>
@@ -67,21 +41,10 @@
 <!-- ================= FIREBASE ================= -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  collection,
-  addDoc,
-  query,
-  where,
-  getDocs,
-  serverTimestamp
+import { 
+  getFirestore, 
+  doc, 
+  getDoc 
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 /* ================= CONFIG ================= */
@@ -91,118 +54,73 @@ const firebaseConfig = {
   projectId: "dgpe-elearning"
 };
 
-const app  = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
 
-/* ================= ELEMENTS ================= */
-const titre        = document.getElementById("titre");
-const moduleCard   = document.getElementById("moduleCard");
-const moduleTitle  = document.getElementById("moduleTitle");
-const moduleDomaine= document.getElementById("moduleDomaine");
-const moduleDuree  = document.getElementById("moduleDuree");
-const moduleResume = document.getElementById("moduleResume");
-const btnInscription = document.getElementById("btnInscription");
-const message      = document.getElementById("message");
-const btnLogout    = document.getElementById("btnLogout");
-
-/* ================= PARAM ID ================= */
-const params = new URLSearchParams(window.location.search);
-const moduleId = params.get("id");
-
-if (!moduleId) {
-  titre.innerText = "❌ Module introuvable";
-  throw new Error("ID module manquant");
+/* ================= UTILS ================= */
+function getModuleId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("id");
 }
 
-let currentUser = null;
-let moduleData  = null;
-
-/* ================= AUTH ================= */
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.replace("login.html");
-    return;
-  }
-
-  const userSnap = await getDoc(doc(db, "users", user.uid));
-
-  if (!userSnap.exists() || userSnap.data().status !== "ACTIF") {
-    await signOut(auth);
-    window.location.replace("login.html");
-    return;
-  }
-
-  currentUser = user;
-  chargerModule();
-});
-
-/* ================= CHARGER MODULE ================= */
+/* ================= CHARGEMENT MODULE ================= */
 async function chargerModule() {
-  const ref = doc(db, "modules", moduleId);
-  const snap = await getDoc(ref);
+  const id = getModuleId();
+  const panel = document.getElementById("modulePanel");
 
-  if (!snap.exists() || snap.data().actif !== true) {
-    titre.innerText = "❌ Module indisponible";
+  if (!id) {
+    panel.innerHTML = "<p>❌ Module introuvable.</p>";
     return;
   }
 
-  moduleData = snap.data();
+  try {
+    const ref = doc(db, "modules", id);
+    const snap = await getDoc(ref);
 
-  titre.innerText        = moduleData.titre;
-  moduleTitle.innerText = moduleData.titre;
-  moduleDomaine.innerText = moduleData.domaine;
-  moduleDuree.innerText   = moduleData.duree;
-  moduleResume.innerText  = moduleData.resume;
+    if (!snap.exists()) {
+      panel.innerHTML = "<p>❌ Module inexistant.</p>";
+      return;
+    }
 
-  moduleCard.style.display = "block";
+    const m = snap.data();
 
-  verifierInscription();
-}
+    const dureeAffichee =
+      m.duree ? m.duree :
+      m.nbHeures ? m.nbHeures + " h" :
+      "—";
 
-/* ================= VERIFIER INSCRIPTION ================= */
-async function verifierInscription() {
-  const q = query(
-    collection(db, "inscriptions"),
-    where("userId", "==", currentUser.uid),
-    where("moduleId", "==", moduleId)
-  );
+    panel.innerHTML = `
+      <h2>${m.titre}</h2>
 
-  const snap = await getDocs(q);
+      <p style="color:#a7b1bd; margin-bottom:1rem">
+        ${m.domaine || "—"} • ${dureeAffichee}
+      </p>
 
-  if (!snap.empty) {
-    btnInscription.disabled = true;
-    btnInscription.innerText = "✔ Déjà inscrit";
+      <p>${m.resume || ""}</p>
+
+      ${m.objectifs ? `
+        <h3>Objectifs</h3>
+        <p>${m.objectifs}</p>
+      ` : ""}
+
+      ${m.contenu ? `
+        <h3>Contenu</h3>
+        <p>${m.contenu}</p>
+      ` : ""}
+
+      <a href="catalogue.html" class="btn" style="margin-top:1.5rem">
+        ← Retour au catalogue
+      </a>
+    `;
+
+  } catch (e) {
+    console.error(e);
+    panel.innerHTML = "❌ Erreur lors du chargement du module.";
   }
 }
 
-/* ================= INSCRIPTION ================= */
-btnInscription.onclick = async () => {
-  btnInscription.disabled = true;
-  message.style.color = "#0b2a4a";
-  message.innerText = "Inscription en cours…";
-
-  await addDoc(collection(db, "inscriptions"), {
-    userId: currentUser.uid,
-    email: currentUser.email,
-    moduleId: moduleId,
-    moduleTitre: moduleData.titre,
-    createdAt: serverTimestamp()
-  });
-
-  message.style.color = "#1b5e20";
-  message.innerText = "✅ Inscription validée avec succès.";
-  btnInscription.innerText = "✔ Inscrit";
-};
-
-/* ================= LOGOUT ================= */
-btnLogout.onclick = async () => {
-  await signOut(auth);
-  window.location.replace("login.html");
-};
-
+chargerModule();
 </script>
 
-<script src="assets/js/app.js"></script>
 </body>
 </html>
