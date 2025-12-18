@@ -70,9 +70,9 @@
 <!-- ================= FIREBASE ================= -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where } 
+import { getFirestore, collection, getDocs, query, where }
   from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut } 
+import { getAuth, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
 /* ================= CONFIG ================= */
@@ -103,6 +103,31 @@ btnLogout.onclick = async () => {
   location.href = "login.html";
 };
 
+/* ================= NORMALISATION ================= */
+function normalize(txt = "") {
+  return txt
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/&/g, "et")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/* ================= DURÉES OFFICIELLES DGPE ================= */
+const DUREES_DGPE = {
+  "gouvernance strategique et analyse financiere": "4 j",
+  "pilotage strategique": "4 j",
+  "audit et conformite": "3 j",
+  "performance et kpi": "2 j",
+  "transformation digitale": "3 j",
+  "ia et decision": "2 j",
+  "leadership": "2 j",
+  "communication de crise": "2 j",
+  "rse concevoir et piloter une strategie durable": "3 j",
+  "manager le changement durable": "2 j"
+};
+
 /* ================= CHARGER MODULES ================= */
 async function chargerModules() {
   const recherche = searchInput.value.toLowerCase();
@@ -111,10 +136,17 @@ async function chargerModules() {
   grid.innerHTML = "Chargement des modules…";
 
   try {
-    let q = collection(db, "modules");
+    let q = query(
+      collection(db, "modules"),
+      where("actif", "==", true)
+    );
 
     if (domaine) {
-      q = query(q, where("domaine", "==", domaine));
+      q = query(
+        collection(db, "modules"),
+        where("actif", "==", true),
+        where("domaine", "==", domaine)
+      );
     }
 
     const snap = await getDocs(q);
@@ -122,14 +154,12 @@ async function chargerModules() {
 
     snap.forEach(docu => {
       const m = docu.data();
-
       if (!m.titre) return;
+
       if (recherche && !m.titre.toLowerCase().includes(recherche)) return;
 
-      const dureeAffichee =
-        m.duree ? m.duree :
-        m.nbHeures ? m.nbHeures + " h" :
-        "—";
+      const key = normalize(m.titre);
+      const dureeAffichee = DUREES_DGPE[key] || "—";
 
       html += `
         <a href="module.html?id=${docu.id}" class="card">
@@ -150,6 +180,7 @@ async function chargerModules() {
   }
 }
 
+/* ================= EVENTS ================= */
 btnSearch.onclick = chargerModules;
 chargerModules();
 </script>
