@@ -3,13 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Catalogue – DGPE</title>
+  <title>Module – DGPE</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<!-- ================= NAVBAR ================= -->
 <header class="navbar">
   <div class="wrap">
     <div class="logo-group">
@@ -17,59 +16,27 @@
       <span class="brand">e-Learning</span>
     </div>
 
-    <nav class="nav" id="nav-public">
+    <nav class="nav">
       <a href="index.html">Accueil</a>
-      <a href="catalogue.html" class="active">Catalogue</a>
-      <a href="login.html" class="pill">Connexion</a>
-    </nav>
-
-    <nav class="nav hidden" id="nav-private">
-      <a href="index.html">Accueil</a>
-      <a href="catalogue.html" class="active">Catalogue</a>
+      <a href="catalogue.html">Catalogue</a>
       <a href="dashboard.html">Dashboard</a>
-      <a href="administration.html">Administration</a>
-      <a href="#" class="pill" id="btnLogout">Déconnexion</a>
     </nav>
   </div>
 </header>
 
-<!-- ================= CONTENU ================= -->
 <main class="page">
-
-  <section class="panel">
-    <h2>Catalogue des formations</h2>
-
-    <input id="searchInput" class="input" placeholder="Rechercher un module…">
-
-    <select id="filterDomaine" class="input">
-      <option value="">Tous domaines</option>
-      <option>Gouvernance</option>
-      <option>Management</option>
-      <option>Finance Publique</option>
-      <option>Performance</option>
-      <option>Digital</option>
-      <option>Leadership</option>
-    </select>
-
-    <button class="btn" id="btnSearch">Rechercher</button>
+  <section class="panel" id="modulePanel">
+    <p>Chargement du module…</p>
   </section>
-
-  <section class="panel">
-    <h3>Résultats</h3>
-    <div class="modules-grid" id="modulesGrid"></div>
-  </section>
-
 </main>
 
 <footer class="footer">
   © 2025 DGPE – Direction Générale du Portefeuille de l’État
 </footer>
 
-<!-- ================= SCRIPT ================= -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 /* ================= CONFIG ================= */
 const firebaseConfig = {
@@ -78,95 +45,96 @@ const firebaseConfig = {
   projectId: "dgpe-elearning"
 };
 
-const app  = initializeApp(firebaseConfig);
-const db   = getFirestore(app);
-const auth = getAuth(app);
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
 
-/* ================= UI ================= */
-const grid       = document.getElementById("modulesGrid");
-const navPublic  = document.getElementById("nav-public");
-const navPrivate = document.getElementById("nav-private");
-const btnLogout  = document.getElementById("btnLogout");
+function getModuleId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("id");
+}
 
-/* ================= AUTH ================= */
-onAuthStateChanged(auth, user => {
-  navPublic.classList.toggle("hidden", !!user);
-  navPrivate.classList.toggle("hidden", !user);
-});
-
-btnLogout.onclick = async () => {
-  await signOut(auth);
-  location.href = "login.html";
-};
-
-/* ================= NORMALISATION ================= */
 function normalize(txt = "") {
-  return txt
+  return String(txt)
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/&/g, "et")
+    .replace(/&/g, " et ")
+    .replace(/[:]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
 /* ================= DURÉES OFFICIELLES DGPE ================= */
-const DUREES_DGPE = {
-  "gouvernance strategique et analyse financiere": "4 j",
-  "pilotage strategique": "4 j",
-  "audit et conformite": "3 j",
-  "performance et kpi": "2 j",
-  "transformation digitale": "3 j",
-  "ia et decision": "2 j",
-  "leadership": "2 j",
-  "communication de crise": "2 j",
-  "rse concevoir et piloter une strategie durable": "3 j",
-  "manager le changement durable": "2 j"
+const dureesDGPE = {
+  [normalize("Gouvernance stratégique et analyse financière")]: "4 j",
+  [normalize("Pilotage stratégique")]: "4 j",
+  [normalize("Audit & conformité")]: "3 j",
+  [normalize("Performance & KPI")]: "2 j",
+  [normalize("Transformation digitale")]: "3 j",
+  [normalize("IA & Décision")]: "2 j",
+  [normalize("Leadership")]: "2 j",
+  [normalize("Communication de crise")]: "2 j",
+  [normalize("RSE : Concevoir et piloter une stratégie durable")]: "3 j",
+  [normalize("Manager le changement durable")]: "2 j"
 };
 
-/* ================= CHARGER MODULES ================= */
-async function chargerModules() {
-  const recherche = searchInput.value.toLowerCase();
-  const domaine   = filterDomaine.value;
+function getTitre(m = {}) {
+  return m.titre || m.title || m.nom || m.name || "";
+}
 
-  grid.innerHTML = "Chargement des modules…";
+function getDureeAffichee(m = {}) {
+  const titre = getTitre(m);
+  const official = dureesDGPE[normalize(titre)];
+  if (official) return official;
+
+  if (m.duree) return m.duree;
+  if (m.nbHeures) return `${m.nbHeures} h`;
+  if (m.heures) return `${m.heures} h`;
+  return "—";
+}
+
+async function chargerModule() {
+  const id = getModuleId();
+  const panel = document.getElementById("modulePanel");
+
+  if (!id) {
+    panel.innerHTML = "<p>❌ Module introuvable.</p>";
+    return;
+  }
 
   try {
-    let q = collection(db, "modules");
-    if (domaine) q = query(q, where("domaine", "==", domaine));
+    const snap = await getDoc(doc(db, "modules", id));
 
-    const snap = await getDocs(q);
-    let html = "";
+    if (!snap.exists()) {
+      panel.innerHTML = "<p>❌ Module inexistant.</p>";
+      return;
+    }
 
-    snap.forEach(docu => {
-      const m = docu.data();
-      if (!m.titre) return;
-      if (recherche && !m.titre.toLowerCase().includes(recherche)) return;
+    const m = snap.data();
+    const titre = getTitre(m);
+    const dureeAffichee = getDureeAffichee(m);
 
-      const key = normalize(m.titre);
-      const dureeAffichee = DUREES_DGPE[key] || "—";
+    panel.innerHTML = `
+      <h2>${titre}</h2>
 
-      html += `
-        <a href="module.html?id=${docu.id}" class="card">
-          <h3>${m.titre}</h3>
-          <p style="color:#a7b1bd">
-            ${m.domaine || "—"} • ${dureeAffichee}
-          </p>
-          <p>${m.resume || ""}</p>
-        </a>
-      `;
-    });
+      <p style="color:#a7b1bd; margin-bottom:1rem">
+        ${m.domaine || "—"} • ${dureeAffichee}
+      </p>
 
-    grid.innerHTML = html || "<p>Aucun module trouvé.</p>";
+      <p>${m.resume || ""}</p>
 
+      ${m.objectifs ? `<h3>Objectifs</h3><p>${m.objectifs}</p>` : ""}
+      ${m.contenu ? `<h3>Contenu</h3><p>${m.contenu}</p>` : ""}
+
+      <a href="catalogue.html" class="btn" style="margin-top:1.5rem">← Retour au catalogue</a>
+    `;
   } catch (e) {
     console.error(e);
-    grid.innerHTML = "❌ Erreur lors du chargement.";
+    panel.innerHTML = "❌ Erreur lors du chargement du module.";
   }
 }
 
-btnSearch.onclick = chargerModules;
-chargerModules();
+chargerModule();
 </script>
 
 </body>
