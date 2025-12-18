@@ -7,13 +7,13 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
 /* ===============================
-   CONFIG FIREBASE (OFFICIELLE)
+   CONFIG FIREBASE (CORRIGÉE)
 ================================ */
 const firebaseConfig = {
   apiKey: "AIzaSyDLeMFoRoclFnfubLqhJBvwtySxLttyHqs",
   authDomain: "dgpe-elearning.firebaseapp.com",
   projectId: "dgpe-elearning",
-  storageBucket: "dgpe-elearning.firebasestorage.app",
+  storageBucket: "dgpe-elearning.appspot.com", // ✅ OBLIGATOIRE
   messagingSenderId: "564422941000",
   appId: "1:564422941000:web:f5232cd0cebafb6aaf7b7d"
 };
@@ -27,13 +27,13 @@ const db  = getFirestore(app);
 const MODULES_DGPE = [
   { titre: "Gouvernance stratégique et analyse financière", domaine: "Gouvernance", duree: "4 j" },
   { titre: "Pilotage stratégique", domaine: "Gouvernance", duree: "4 j" },
-  { titre: "Audit & conformité", domaine: "Gouvernance", duree: "3 j" },
-  { titre: "Performance & KPI", domaine: "Performance", duree: "2 j" },
+  { titre: "Audit et conformité", domaine: "Gouvernance", duree: "3 j" },
+  { titre: "Performance et KPI", domaine: "Performance", duree: "2 j" },
   { titre: "Transformation digitale", domaine: "Digital", duree: "3 j" },
-  { titre: "IA & Décision", domaine: "Digital", duree: "2 j" },
+  { titre: "IA et décision", domaine: "Digital", duree: "2 j" },
   { titre: "Leadership", domaine: "Management", duree: "2 j" },
   { titre: "Communication de crise", domaine: "Management", duree: "2 j" },
-  { titre: "RSE : Concevoir et piloter une stratégie durable", domaine: "Gouvernance", duree: "3 j" },
+  { titre: "RSE – stratégie durable", domaine: "Gouvernance", duree: "3 j" },
   { titre: "Manager le changement durable", domaine: "Management", duree: "2 j" }
 ];
 
@@ -41,17 +41,21 @@ const MODULES_DGPE = [
    LOG UI
 ================================ */
 const logBox = document.getElementById("log");
+
 function log(msg) {
   console.log(msg);
-  logBox.textContent += "\n" + msg;
+  if (logBox) {
+    logBox.textContent += "\n" + msg;
+  }
 }
 
 /* ===============================
-   IMPORT FIRESTORE
+   IMPORT DANS FIRESTORE
 ================================ */
 async function creerModulesDGPE() {
   try {
-    log("🔌 Connexion à Firestore…");
+    log("🔌 Connexion à Firestore OK");
+    log("🚀 Création des modules DGPE…");
 
     let count = 0;
 
@@ -65,7 +69,7 @@ async function creerModulesDGPE() {
       });
 
       count++;
-      log(`✔ ${m.titre} → ${m.duree}`);
+      log(`✔ ${m.titre} (${m.duree})`);
     }
 
     log("================================");
