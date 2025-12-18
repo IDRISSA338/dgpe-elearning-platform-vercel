@@ -3,22 +3,24 @@
 <head>
   <meta charset="utf-8">
   <title>Import des modules DGPE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
     body {
-      background: #0b1e34;
-      color: #eaf2ff;
-      font-family: Consolas, monospace;
+      margin: 0;
       padding: 40px;
+      font-family: Consolas, monospace;
+      background: #081c2e;
+      color: #ffffff;
     }
     h1 {
-      color: #f5c542;
+      color: #f6b100;
     }
     pre {
-      background: rgba(255,255,255,0.05);
-      padding: 20px;
-      border-radius: 8px;
       margin-top: 20px;
+      padding: 20px;
+      background: #0f2d46;
+      border-radius: 8px;
       white-space: pre-wrap;
     }
   </style>
@@ -26,34 +28,30 @@
 
 <body>
 
-<h1>Import des modules DGPE</h1>
-<p>Création des modules officiels 2026.</p>
+  <h1>Import des modules DGPE</h1>
+  <p>Création des modules officiels 2026.</p>
 
-<pre id="log">⏳ Initialisation...</pre>
+  <pre id="log">⏳ Lancement du script...</pre>
 
-<!-- 🔥 Firebase + Import -->
-<script type="module">
+  <!-- 🔥 INITIALISATION FIREBASE (OBLIGATOIRE) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
 
-  // 🔹 Firebase core
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    const firebaseConfig = {
+      apiKey: "AIzaSyDLeMFoRoclFnfubLqhJBvutySxLttyHqs",
+      authDomain: "dgpe-elearning.firebaseapp.com",
+      projectId: "dgpe-elearning",
+      storageBucket: "dgpe-elearning.firebasestorage.app",
+      messagingSenderId: "564422941000",
+      appId: "1:564422941000:web:f523c0d0cebaf6aaf7b7d",
+      measurementId: "G-3H1K6LJ12J"
+    };
 
-  // 🔹 Ton script d’import
-  import "./import-modules.js";
+    initializeApp(firebaseConfig);
+  </script>
 
-  // 🔐 CONFIG FIREBASE DGPE (⚠️ LA TIENNE EXACTE)
-  const firebaseConfig = {
-    apiKey: "XXX",
-    authDomain: "dgpe-elearning.firebaseapp.com",
-    projectId: "dgpe-elearning",
-    storageBucket: "dgpe-elearning.appspot.com",
-    messagingSenderId: "XXX",
-    appId: "XXX"
-  };
-
-  // 🚀 INITIALISATION OBLIGATOIRE
-  initializeApp(firebaseConfig);
-
-</script>
+  <!-- 🚀 SCRIPT D’IMPORT -->
+  <script type="module" src="./import-modules.js"></script>
 
 </body>
 </html>
