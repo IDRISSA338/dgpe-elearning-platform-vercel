@@ -2,199 +2,133 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Administration – DGPE</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="./style.css">
+  <title>Administration – DGPE</title>
 
-  <style>
-    table{width:100%;border-collapse:collapse;margin-top:20px;background:#fff}
-    th,td{border:1px solid #ddd;padding:10px;text-align:center;font-size:14px}
-    th{background:#0b2a4a;color:#fff}
-    .btn{border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:700}
-    .ok{background:#1b5e20;color:#fff}
-    .no{background:#c62828;color:#fff}
-    .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
-    .card{background:rgba(255,255,255,.96);padding:18px;border-radius:14px;margin-top:25px}
-    #msg{margin-top:12px;font-weight:700}
+  <link rel="stylesheet" href="./style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 30px;
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(6px);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+
+  th, td {
+    padding: 14px;
+    text-align: center;
+    color: #e6edf3;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  th {
+    background: rgba(11,42,74,0.85);
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  tr:hover td {
+    background: rgba(255,255,255,0.05);
+  }
+
+  .btn-danger {
+    background: #e53935;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .btn-danger:hover {
+    background: #c62828;
+  }
+</style>
+
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: center;
+    }
+
+    th {
+      background: #0b2a4a;
+      color: white;
+    }
+
+    .btn-danger {
+      background: #e53935;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-danger:hover {
+      background: #c62828;
+    }
   </style>
 </head>
 
 <body>
 
-<!-- ================= NAVBAR ================= -->
-<header class="navbar">
+<!-- ✅ NAVBAR -->
+<div class="navbar">
   <div class="wrap">
     <div class="logo-group">
-      <img src="assets/img/dgpe-logo.png" class="logo" alt="DGPE">
-      <span class="brand">Administration</span>
+      <img src="./assets/img/DGPE_logo.png" class="logo" alt="DGPE">
+      <span class="brand">e-Learning</span>
     </div>
+
     <nav class="nav">
+      <a href="index.html">Accueil</a>
+      <a href="catalogue.html">Catalogue</a>
+      <a href="module.html">Module</a>
       <a href="dashboard.html">Dashboard</a>
-      <a href="#" class="pill" id="btnLogout">Déconnexion</a>
+      <a href="administration.html">Administration</a>
+      <a href="login.html" class="pill">Déconnexion</a>
     </nav>
   </div>
-</header>
+</div>
 
-<!-- ================= CONTENU ================= -->
-<section class="wrap">
-  <div class="card">
-    <h1>📋 Demandes de création de compte</h1>
-    <p style="opacity:.8;margin-top:-6px">
-      Seules les demandes <b>PENDING</b> sont affichées.
-    </p>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Email</th>
-          <th>UID</th>
-          <th>Date</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
 
-    <div id="msg"></div>
+<!-- ✅ CONTENU ADMIN -->
+<div class="page">
+  <div class="panel">
+    <h2>Administration</h2>
+    <p>Gestion des utilisateurs, modules et inscriptions</p>
+
+    <div class="cards" style="margin-top:10px">
+      <div class="card"><h3>Utilisateurs</h3><p>Créer / modifier / désactiver</p></div>
+      <div class="card"><h3>Catalogue</h3><p>Gérer les fiches & domaines</p></div>
+      <div class="card"><h3>Sessions</h3><p>Planifier & suivre</p></div>
+    </div>
   </div>
-</section>
+</div>
 
-<!-- ================= AUTH FIREBASE ================= -->
-<script type="module" src="assets/js/auth.js"></script>
-<script>
-  protectAdminPage(); // 🔒 PROTECTION ABSOLUE ADMIN
-</script>
 
-<!-- ================= FIREBASE LOGIQUE ================= -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-  import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-  import {
-    getFirestore,
-    collection,
-    query,
-    where,
-    getDocs,
-    doc,
-    setDoc,
-    updateDoc,
-    serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-  /* ================= CONFIG ================= */
-  const firebaseConfig = {
-    apiKey: "AIzaSyDLeMFoRoclFnfubLqhJBvwtySxLttyHqs",
-    authDomain: "dgpe-elearning.firebaseapp.com",
-    projectId: "dgpe-elearning"
-  };
+<!-- ✅ TABLEAU DES INSCRIPTIONS -->
+<section class="wrap" style="padding:40px 0">
+  <h2>📋 Tableau des inscriptions</h2>
 
-  const app  = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
-
-  const tbody = document.getElementById("tbody");
-  const msg   = document.getElementById("msg");
-
-  function setMsg(t, ok=true){
-    msg.style.color = ok ? "#1b5e20" : "#c62828";
-    msg.textContent = t;
-  }
-
-  /* ================= CHARGER LES DEMANDES ================= */
-  async function loadPending(){
-    tbody.innerHTML = "<tr><td colspan='4'>Chargement…</td></tr>";
-
-    const q = query(
-      collection(db, "user_requests"),
-      where("status", "==", "PENDING")
-    );
-
-    const snap = await getDocs(q);
-
-    if (snap.empty){
-      tbody.innerHTML = "<tr><td colspan='4'>Aucune demande en attente</td></tr>";
-      return;
-    }
-
-    tbody.innerHTML = "";
-
-    snap.forEach(d => {
-      const r = d.data();
-      const tr = document.createElement("tr");
-
-      tr.innerHTML = `
-        <td>${r.email}</td>
-        <td style="font-family:monospace;font-size:12px">${r.uid}</td>
-        <td>${r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString() : ""}</td>
-        <td>
-          <button class="btn ok" data-uid="${r.uid}" data-email="${r.email}">
-            ✅ Activer
-          </button>
-          <button class="btn no" data-uid="${r.uid}">
-            ❌ Refuser
-          </button>
-        </td>
-      `;
-
-      tbody.appendChild(tr);
-    });
-  }
-
-  /* ================= ACTIONS ADMIN ================= */
-  tbody.addEventListener("click", async (e) => {
-    const btn = e.target.closest("button");
-    if (!btn) return;
-
-    const uid   = btn.dataset.uid;
-    const email = btn.dataset.email || "";
-
-    try {
-
-      // ✅ ACTIVER
-      if (btn.classList.contains("ok")) {
-
-        // 1) Création fiche officielle utilisateur
-        await setDoc(doc(db, "users", uid), {
-          uid,
-          email,
-          role: "AGENT",
-          status: "ACTIF",
-          activatedAt: serverTimestamp()
-        }, { merge: true });
-
-        // 2) Mise à jour de la demande
-        await updateDoc(doc(db, "user_requests", uid), {
-          status: "APPROVED",
-          processedAt: serverTimestamp()
-        });
-
-        setMsg("✅ Compte activé : " + email, true);
-      }
-
-      // ❌ REFUSER
-      if (btn.classList.contains("no")) {
-        await updateDoc(doc(db, "user_requests", uid), {
-          status: "REFUSED",
-          processedAt: serverTimestamp()
-        });
-        setMsg("❌ Demande refusée.", false);
-      }
-
-      await loadPending();
-
-    } catch (err) {
-      setMsg("Erreur : " + err.message, false);
-    }
-  });
-
-  /* ================= LOGOUT ================= */
-  document.getElementById("btnLogout").onclick = async () => {
-    await signOut(auth);
-    window.location.replace("login.html");
-  };
-
-  loadPending();
-</script>
-
-</body>
-</html>
+  <table>
+    <thead>
+      <tr>
+        <th>Utilisateur</th>
+        <th>Module</th>
+        <th>Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="tableInscriptions"></tbody>
