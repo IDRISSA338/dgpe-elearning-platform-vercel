@@ -111,3 +111,22 @@
 
 </body>
 </html>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://hrriedjmpwjfmfimqlmx.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_1AnZMUSy3A4X8xIrKJOKQw_cOX40j9V";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const navPublic  = document.getElementById("nav-public");
+  const navPrivate = document.getElementById("nav-private");
+
+  supabase.auth.getUser().then(({ data }) => {
+    if (data?.user) {
+      navPublic.classList.add("hidden");
+      navPrivate.classList.remove("hidden");
+    } else {
+      navPublic.classList.remove("hidden");
+      navPrivate.classList.add("hidden");
+    }
+  });
+</script>
