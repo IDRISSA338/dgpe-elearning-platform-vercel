@@ -9,25 +9,25 @@
 
 <body class="login-page">
 
-<header class="navbar-login">
+<div class="navbar-login">
   <div class="wrap">
     <div class="logo-group">
       <img src="assets/img/dgpe-logo.png" class="logo" alt="DGPE">
       <span class="brand">e-Learning</span>
     </div>
   </div>
-</header>
+</div>
 
-<section class="hero hero-login">
+<section class="hero" style="background:none;padding-top:60px;text-align:center">
   <div class="inner">
     <h1>Connexion</h1>
-    <p>Accès réservé aux utilisateurs autorisés</p>
+    <p>Accédez à vos cours et à votre tableau de bord</p>
   </div>
 </section>
 
-<main class="login-wrap">
-  <section class="login-card">
-    <h2>Accès à la plateforme</h2>
+<div class="login-wrap">
+  <div class="login-card" id="loginCard">
+    <h2>Se connecter</h2>
 
     <label>Email professionnel</label>
     <input id="email" class="input" type="email" placeholder="prenom.nom@dgpe.gouv.ci">
@@ -37,98 +37,129 @@
 
     <div class="row">
       <label><input type="checkbox"> Se souvenir de moi</label>
-      <a href="#" id="forgot">Mot de passe oublié ?</a>
+      <a href="#" onclick="forgotPassword()">Mot de passe oublié ?</a>
     </div>
 
-    <button class="btn btn-primary" id="btnLogin">Connexion</button>
-    <button class="btn btn-secondary" id="btnRegister">Créer un compte</button>
+    <button class="btn btn-primary" onclick="login()">Connexion</button>
+    <br><br>
+    <button class="btn btn-secondary" onclick="register()">Créer un compte</button>
 
-    <!-- Message DGPE -->
-    <p id="msg" class="msg"></p>
-  </section>
-</main>
+    <p id="msg" style="margin-top:15px;font-weight:500"></p>
+  </div>
+</div>
 
 <footer class="footer">
 © 2025 DGPE – Direction Générale du Portefeuille de l’État
 </footer>
 
-<!-- SUPABASE -->
+<!-- SUPABASE V2 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-/* ================= SUPABASE ================= */
+/* ================= SUPABASE CONFIG ================= */
 const SUPABASE_URL = "https://rwjyxmzdwdddjaeghpae.supabase.co";
 const SUPABASE_KEY = "sb_publishable_GbNaiadaYRtF0WhOjiPp2w_ww7jVANw";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 
 /* ================= UI ================= */
-const emailEl = document.getElementById("email");
-const passEl  = document.getElementById("password");
-const msgEl   = document.getElementById("msg");
+const msg = document.getElementById("msg");
 
-function showMsg(text, type="info") {
-  msgEl.textContent = text;
-  msgEl.className = "msg " + type;
+function showMsg(text, color="black") {
+  msg.textContent = text;
+  msg.style.color = color;
 }
 
 /* ================= LOGIN ================= */
-document.getElementById("btnLogin").onclick = async () => {
-
-  const email = emailEl.value.trim().toLowerCase();
-  const password = passEl.value.trim();
+async function login() {
+  const email = email.value = document.getElementById("email").value.trim().toLowerCase();
+  const password = document.getElementById("password").value.trim();
 
   if (!email || !password) {
-    showMsg("Veuillez remplir tous les champs.", "error");
+    showMsg("❌ Veuillez remplir tous les champs.", "red");
     return;
   }
 
   if (!email.endsWith("@dgpe.gouv.ci")) {
-    showMsg("Accès réservé aux emails professionnels DGPE.", "error");
+    showMsg("⛔ Email DGPE obligatoire.", "red");
     return;
   }
 
-  showMsg("Connexion en cours…");
+  showMsg("⏳ Connexion en cours…", "#555");
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
 
   if (error) {
-    showMsg("Identifiants incorrects ou compte non confirmé.", "error");
+    showMsg("❌ Identifiants incorrects ou compte non confirmé.", "red");
     return;
   }
 
-  // Vérification DGPE
-  const { data: profile, error: profErr } = await supabase
+  const { data: profile } = await supabaseClient
     .from("users")
-    .select("role, status")
+    .select("status, role")
     .eq("email", email)
     .single();
 
-  if (profErr || !profile) {
-    showMsg("Compte non reconnu par l’administration DGPE.", "error");
+  if (!profile) {
+    showMsg("⛔ Compte non validé par l’administration DGPE.", "red");
     return;
   }
 
   if (profile.status === "PENDING") {
-    showMsg("Votre compte est en attente de validation par l’administrateur DGPE.", "warning");
+    showMsg("⏳ Compte en attente de validation DGPE.", "orange");
     return;
   }
 
   if (profile.status !== "ACTIF") {
-    showMsg("Compte désactivé. Contactez l’administration.", "error");
+    showMsg("⛔ Compte désactivé.", "red");
     return;
   }
 
-  showMsg("Connexion autorisée. Redirection…", "success");
+  showMsg("✅ Connexion autorisée. Redirection…", "green");
 
   setTimeout(() => {
     window.location.href = "dashboard.html";
   }, 800);
-};
+}
 
 /* ================= REGISTER ================= */
-document.getElementById("btnRegister").onclick = () => {
-  window.location.href = "register.html";
-};
+async function register() {
+  const email = document.getElementById("email").value.trim().toLowerCase();
+  const password = document.getElementById("password").value.trim();
+
+  if (!email || !password) {
+    showMsg("❌ Champs obligatoires.", "red");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) {
+    showMsg("❌ " + error.message, "red");
+  } else {
+    showMsg("✅ Compte créé. Validation requise par l’administrateur DGPE.", "green");
+  }
+}
+
+/* ================= FORGOT ================= */
+async function forgotPassword() {
+  const email = document.getElementById("email").value.trim();
+  if (!email) {
+    alert("Saisissez votre email.");
+    return;
+  }
+  await supabaseClient.auth.resetPasswordForEmail(email);
+  alert("Email de réinitialisation envoyé.");
+}
 </script>
 
 </body>
