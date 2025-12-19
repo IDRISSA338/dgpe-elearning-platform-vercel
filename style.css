@@ -247,4 +247,13 @@ input:-webkit-autofill{
   .brand{ font-size:26px; }
   .logo{ height:72px; }
   .hero h1{ font-size:38px; }
+}.msg {
+  margin-top: 14px;
+  text-align: center;
+  font-weight: 600;
 }
+
+.msg.error { color: #c62828; }
+.msg.warning { color: #ef6c00; }
+.msg.success { color: #2e7d32; }
+
