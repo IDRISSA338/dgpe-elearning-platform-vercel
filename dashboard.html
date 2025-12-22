@@ -2,135 +2,49 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard – DGPE</title>
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<!-- ================= NAVBAR ================= -->
 <header class="navbar">
   <div class="wrap">
     <div class="logo-group">
-      <img src="assets/img/dgpe-logo.png" class="logo" alt="DGPE">
+      <img src="assets/img/dgpe-logo.png" class="logo">
       <span class="brand">e-Learning</span>
     </div>
-
     <nav class="nav">
       <a href="index.html">Accueil</a>
       <a href="catalogue.html">Catalogue</a>
+      <a href="modules.html">Modules</a>
       <a href="dashboard.html" class="active">Dashboard</a>
-      <a href="administration.html" id="adminLink">Administration</a>
-      <a href="#" class="pill" id="logoutBtn">Déconnexion</a>
+      <a href="#" id="logoutBtn" class="pill">Déconnexion</a>
     </nav>
   </div>
 </header>
 
-<!-- ================= CONTENU ================= -->
 <main class="page">
-
   <section class="panel">
     <h2>Tableau de bord</h2>
-
-    <div class="cards" id="kpis">
-
-      <div class="card">
-        <h3>Modules suivis</h3>
-        <p><strong id="kpi-modules">0</strong></p>
-      </div>
-
-      <div class="card">
-        <h3>Heures de formation</h3>
-        <p><strong id="kpi-heures">0 h</strong></p>
-      </div>
-
-      <div class="card">
-        <h3>Certifications</h3>
-        <p><strong id="kpi-certifs">0</strong></p>
-      </div>
-
+    <div class="cards">
+      <div class="card"><h3>Modules suivis</h3><p>3</p></div>
+      <div class="card"><h3>Heures</h3><p>12 h</p></div>
+      <div class="card"><h3>Certifications</h3><p>1</p></div>
     </div>
   </section>
-
 </main>
 
-<footer class="footer">
-  © 2025 DGPE – Direction Générale du Portefeuille de l’État
-</footer>
+<footer class="footer">© 2025 DGPE</footer>
 
-<!-- ================= SUPABASE ================= -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const supabase = createClient("https://rwjyxmzdwdddjaeghpae.supabase.co",
+"sb_publishable_GbNaiadaYRtF0WhOjiPp2w_ww7jVANw");
 
-<script>
-/* ================= CONFIG ================= */
-const SUPABASE_URL = "https://rwjyxmzdwdddjaeghpae.supabase.co";
-const SUPABASE_KEY = "sb_publishable_GbNaiadaYRtF0WhOjiPp2w_ww7jVANw";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-/* ================= ELEMENTS UI ================= */
-const adminLink = document.getElementById("adminLink");
-const kpiModules = document.getElementById("kpi-modules");
-const kpiHeures  = document.getElementById("kpi-heures");
-const kpiCertifs = document.getElementById("kpi-certifs");
-
-/* ================= AUTH GUARD ================= */
-async function protectDashboard() {
-
-  const { data: { user }, error } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    window.location.replace("login.html");
-    return;
-  }
-
-  // 🔹 Lecture profil DGPE
-  const { data: profile, error: profileError } = await supabase
-    .from("users")
-    .select("role, status")
-    .eq("email", user.email)
-    .single();
-
-  if (profileError || !profile || profile.status !== "ACTIF") {
-    await supabase.auth.signOut();
-    window.location.replace("login.html");
-    return;
-  }
-
-  // 🔒 Masquer admin si non admin
-  if (profile.role !== "ADMIN") {
-    adminLink.style.display = "none";
-  }
-
-  // Charger les données
-  chargerDashboard(user.id);
-}
-
-/* ================= DASHBOARD DATA ================= */
-async function chargerDashboard(userId) {
-
-  /*
-    ⚠️ Pour l’instant données statiques
-    👉 ensuite on branchera :
-    - table inscriptions
-    - table modules
-    - table certifications
-  */
-
-  kpiModules.innerText = 3;
-  kpiHeures.innerText  = "12 h";
-  kpiCertifs.innerText = 1;
-}
-
-/* ================= LOGOUT ================= */
-document.getElementById("logoutBtn").addEventListener("click", async (e) => {
-  e.preventDefault();
+document.getElementById("logoutBtn").onclick = async () => {
   await supabase.auth.signOut();
-  window.location.replace("login.html");
-});
-
-/* ================= INIT ================= */
-protectDashboard();
+  location.href = "login.html";
+};
 </script>
 
 </body>
