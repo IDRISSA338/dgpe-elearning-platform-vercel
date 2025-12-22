@@ -48,38 +48,66 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ================= SUPABASE CONFIG ================= */
-const supabaseClient = supabase.createClient(
-  "https://rwjyxmzdwdddjaeghpae.supabase.co",
-  "sb_publishable_GbNaiadaYRtF0WhOjiPp2w_ww7jVANw"
-);
+const SUPABASE_URL = "https://rwjyxmzdwdddjaeghpae.supabase.co";
+const SUPABASE_KEY = "sb_publishable_GbNaiadaYRtF0WhOjiPp2w_ww7jVANw";
 
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ================= UI HELPERS ================= */
 const msg = document.getElementById("msg");
-const show = (t, c="info") => {
+function show(t, type="info"){
   msg.textContent = t;
-  msg.className = "msg " + c;
-};
+  msg.className = "msg " + type;
+}
+function emailInput(){ return document.getElementById("email").value.trim().toLowerCase(); }
+function passwordInput(){ return document.getElementById("password").value.trim(); }
 
 /* ================= LOGIN ================= */
-async function login(){
-  const email = emailInput().toLowerCase();
+window.login = async function(){
+  const email = emailInput();
   const password = passwordInput();
 
-  if(!email || !password)
-    return show("Veuillez remplir tous les champs","error");
+  if(!email || !password) return show("Veuillez remplir tous les champs","error");
+  if(!email.endsWith("@dgpe.gouv.ci")) return show("Email DGPE requis","error");
 
-  if(!email.endsWith("@dgpe.gouv.ci"))
-    return show("Email DGPE requis","error");
+  show("Connexion en cours…","info");
 
-  show("Connexion en cours...");
+  // 1) AUTH
+  const { data: authData, error } = await supabaseClient.auth.signInWithPassword({
+    email, password
+  });
 
-  // 1️⃣ Auth
-  const { data: authData, error } =
-    await supabaseClient.auth.signInWithPassword({ email, password });
-
-  if(error)
+  if(error || !authData?.user){
     return show("Identifiants incorrects","error");
+  }
 
   const authUser = authData.user;
 
-  // 2️⃣ PROFIL MÉTIER (PAR auth_id)
-  const { data: profile, error: e2
+  // 2) PROFIL MÉTIER (table public.users) — on vérifie par auth_id
+  const { data: profile, error: e2 } = await supabaseClient
+    .from("users")
+    .select("status, role")
+    .eq("auth_id", authUser.id)
+    .single();
+
+  if(e2 || !profile){
+    await supabaseClient.auth.signOut();
+    return show("Compte non reconnu par l’administration DGPE","error");
+  }
+
+  if(profile.status !== "ACTIF"){
+    await supabaseClient.auth.signOut();
+    return show("Compte en attente de validation administrateur","warning");
+  }
+
+  // 3) OK
+  show("Connexion autorisée. Redirection…","success");
+  setTimeout(() => window.location.href = "dashboard.html", 500);
+};
+
+/* ================= REGISTER ================= */
+window.register = async function(){
+  const email = emailInput();
+  const password = passwordInput();
+
+  if(
