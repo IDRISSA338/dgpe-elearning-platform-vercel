@@ -20,7 +20,7 @@
 
 <div class="login-wrap">
   <div class="login-card">
-    <h2>Se connecter</h2>
+    <h2>Connexion</h2>
 
     <label>Email professionnel</label>
     <input id="email" class="input" type="email" placeholder="prenom.nom@dgpe.gouv.ci">
@@ -28,7 +28,7 @@
     <label>Mot de passe</label>
     <input id="password" class="input" type="password">
 
-    <button class="btn btn-primary" onclick="login()">Connexion</button>
+    <button class="btn btn-primary" onclick="login()">Se connecter</button>
 
     <p id="msg"></p>
   </div>
@@ -42,7 +42,7 @@ const supabaseClient = supabase.createClient(
 );
 
 async function login() {
-  const email = emailInput = document.getElementById("email").value.trim().toLowerCase();
+  const email = document.getElementById("email").value.trim().toLowerCase();
   const password = document.getElementById("password").value.trim();
   const msg = document.getElementById("msg");
 
