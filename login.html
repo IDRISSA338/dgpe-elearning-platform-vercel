@@ -17,7 +17,7 @@
   </div>
 </header>
 
-<!-- ================= LOGIN ================= -->
+<!-- ================= LOGIN CARD ================= -->
 <div class="login-wrap">
   <div class="login-card">
 
@@ -57,7 +57,7 @@
 <!-- ================= SUPABASE ================= -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* ================= CONFIG SUPABASE ================= */
+/* ================= CONFIG ================= */
 const SUPABASE_URL = "https://rwjyxmzdwdddjaeghpae.supabase.co";
 const SUPABASE_KEY = "sb_publishable_GbNaiadaYRtF0WhOjiPp2w_ww7jVANw";
 
@@ -90,6 +90,7 @@ async function login(){
 
   show("Connexion en cours…");
 
+  // 1️⃣ Auth Supabase
   const { error } = await supabaseClient.auth.signInWithPassword({
     email, password
   });
@@ -99,27 +100,40 @@ async function login(){
     return;
   }
 
-  // Vérification validation DGPE
-  const { data, error: e2 } = await supabaseClient
+  // 2️⃣ Attendre la session (CRITIQUE)
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const user = sessionData?.session?.user;
+
+  if(!user){
+    await supabaseClient.auth.signOut();
+    show("Session invalide","error");
+    return;
+  }
+
+  // 3️⃣ Vérification DGPE (table users)
+  const { data: profile, error: e2 } = await supabaseClient
     .from("users")
-    .select("status")
+    .select("status, role")
     .eq("email", email)
     .single();
 
-  if(e2 || !data){
+  if(e2 || !profile){
     await supabaseClient.auth.signOut();
     show("Compte non reconnu par l’administration DGPE","error");
     return;
   }
 
-  if(data.status !== "ACTIF"){
+  if(profile.status !== "ACTIF"){
     await supabaseClient.auth.signOut();
-    show("Compte en attente de validation admin","warning");
+    show("Compte en attente de validation administrateur","warning");
     return;
   }
 
-  show("Connexion autorisée","success");
-  setTimeout(()=>location.href="dashboard.html",600);
+  // 4️⃣ OK
+  show("Connexion autorisée. Redirection…","success");
+  setTimeout(() => {
+    window.location.href = "dashboard.html";
+  }, 600);
 }
 
 /* ================= INSCRIPTION ================= */
