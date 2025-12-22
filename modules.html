@@ -2,51 +2,50 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Mes modules – DGPE</title>
+  <title>Modules – DGPE</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- NAVBAR -->
 <header class="navbar">
   <div class="wrap">
     <div class="logo-group">
       <img src="assets/img/dgpe-logo.png" class="logo">
       <span class="brand">e-Learning</span>
     </div>
-    <nav class="nav">
+    <nav class="nav hidden" id="nav-private">
       <a href="index.html">Accueil</a>
       <a href="catalogue.html">Catalogue</a>
-      <a href="modules.html" class="active">Modules</a>
+      <a href="modules.html">Modules</a>
       <a href="dashboard.html">Dashboard</a>
+      <a href="#" id="logoutBtn" class="pill">Déconnexion</a>
     </nav>
   </div>
 </header>
 
 <main class="page">
-  <section class="panel">
-    <h2>Mes modules</h2>
-    <div id="myModules" class="modules-grid"></div>
-  </section>
+  <h1>Liste des modules</h1>
 </main>
 
-<footer class="footer">© 2025 DGPE</footer>
+<!-- PROTECTION -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const supabaseClient = supabase.createClient(
+  "https://hrriedjmpwjfmfimqlmx.supabase.co",
+  "sb_publishable_1AnZMUSy3A4X8xIrKJOKQw_cOX40j9V"
+);
 
-<script type="module">
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const supabase = createClient("https://rwjyxmzdwdddjaeghpae.supabase.co",
-"sb_publishable_GbNaiadaYRtF0WhOjiPp2w_ww7jVANw");
+(async () => {
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) window.location.replace("login.html");
 
-const { data:{ user }} = await supabase.auth.getUser();
-const { data } = await supabase
-  .from("inscriptions")
-  .select("modules(*)")
-  .eq("user_id", user.id);
-
-document.getElementById("myModules").innerHTML =
-  data.map(i => `
-    <a href="module.html?id=${i.modules.id}" class="card">
-      <h3>${i.modules.titre}</h3>
-    </a>`).join("");
+  document.getElementById("nav-private").classList.remove("hidden");
+  document.getElementById("logoutBtn").onclick = async () => {
+    await supabaseClient.auth.signOut();
+    window.location.replace("login.html");
+  };
+})();
 </script>
 
 </body>
