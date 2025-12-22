@@ -21,86 +21,56 @@
     <h2>Connexion</h2>
 
     <label>Email professionnel</label>
-    <input id="email" class="input" type="email" placeholder="prenom.nom@dgpe.gouv.ci">
+    <input id="email" class="input" type="email">
 
     <label>Mot de passe</label>
     <input id="password" class="input" type="password">
 
-    <button id="btnLogin" class="btn btn-primary">Se connecter</button>
+    <!-- 🔥 TYPE=BUTTON OBLIGATOIRE -->
+    <button id="btnLogin" type="button" class="btn btn-primary">
+      Se connecter
+    </button>
 
     <p id="msg" class="msg"></p>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
-/* ================= SUPABASE ================= */
-const supabase = supabaseJs.createClient(
+console.log("🚀 Login script chargé");
+
+const supabaseClient = supabase.createClient(
   "https://rwjyxmzdwdddjaeghpae.supabase.co",
   "sb_publishable_GbNaiadaYRtF0WhOjiPp2w_ww7jVANw"
 );
 
-/* ================= ELEMENTS ================= */
-const emailInput = document.getElementById("email");
-const passwordInput = document.getElementById("password");
+const email = document.getElementById("email");
+const password = document.getElementById("password");
 const msg = document.getElementById("msg");
+const btnLogin = document.getElementById("btnLogin");
 
-function show(text, type = "error") {
-  msg.textContent = text;
-  msg.className = "msg " + type;
-}
+btnLogin.addEventListener("click", async () => {
+  console.log("🟢 Bouton cliqué");
 
-/* ================= LOGIN ================= */
-document.getElementById("btnLogin").addEventListener("click", async () => {
-  const email = emailInput.value.trim().toLowerCase();
-  const password = passwordInput.value.trim();
+  msg.textContent = "Connexion en cours...";
 
-  if (!email || !password) {
-    show("Veuillez remplir tous les champs");
-    return;
-  }
-
-  show("Connexion en cours...", "info");
-
-  /* 1️⃣ Auth */
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: email.value.trim(),
+    password: password.value
   });
 
-  if (error || !data.user) {
-    show("Email ou mot de passe incorrect");
+  if (error) {
+    console.error(error);
+    msg.textContent = "❌ " + error.message;
     return;
   }
 
-  const authId = data.user.id;
+  msg.textContent = "✅ Connecté";
+  console.log("Utilisateur :", data.user);
 
-  /* 2️⃣ Vérification table users */
-  const { data: profile, error: dbError } = await supabase
-    .from("users")
-    .select("role, status")
-    .eq("auth_id", authId)
-    .single();
-
-  if (dbError || !profile) {
-    await supabase.auth.signOut();
-    show("Compte non reconnu par l’administration DGPE");
-    return;
-  }
-
-  /* 3️⃣ Statut */
-  if (profile.status !== "ACTIF") {
-    await supabase.auth.signOut();
-    show("Compte en attente de validation DGPE");
-    return;
-  }
-
-  /* 4️⃣ OK */
-  show("Connexion réussie ✔", "success");
-
-  setTimeout(() => {
-    window.location.href = "dashboard.html";
-  }, 600);
+  // 🔐 REDIRECTION
+  window.location.href = "dashboard.html";
 });
 </script>
 
