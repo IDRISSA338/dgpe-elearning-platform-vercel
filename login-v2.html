@@ -21,13 +21,12 @@
     <h2>Connexion</h2>
 
     <label>Email professionnel</label>
-    <input id="email" class="input" type="email">
+    <input id="email" class="input" type="email" placeholder="prenom.nom@dgpe.gouv.ci">
 
     <label>Mot de passe</label>
     <input id="password" class="input" type="password">
 
     <button id="btnLogin" class="btn btn-primary">Se connecter</button>
-    <button id="btnRegister" class="btn btn-secondary">Créer un compte</button>
 
     <p id="msg" class="msg"></p>
   </div>
@@ -35,33 +34,73 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const supabaseClient = supabase.createClient(
+/* ================= SUPABASE ================= */
+const supabase = supabaseJs.createClient(
   "https://rwjyxmzdwdddjaeghpae.supabase.co",
   "sb_publishable_GbNaiadaYRtF0WhOjiPp2w_ww7jVANw"
 );
 
-const email = document.getElementById("email");
-const password = document.getElementById("password");
+/* ================= ELEMENTS ================= */
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
 const msg = document.getElementById("msg");
 
+function show(text, type = "error") {
+  msg.textContent = text;
+  msg.className = "msg " + type;
+}
+
+/* ================= LOGIN ================= */
 document.getElementById("btnLogin").addEventListener("click", async () => {
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email: email.value,
-    password: password.value
+  const email = emailInput.value.trim().toLowerCase();
+  const password = passwordInput.value.trim();
+
+  if (!email || !password) {
+    show("Veuillez remplir tous les champs");
+    return;
+  }
+
+  show("Connexion en cours...", "info");
+
+  /* 1️⃣ Auth */
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
   });
 
-  if (error) msg.textContent = error.message;
-  else msg.textContent = "Connecté ✔";
-});
+  if (error || !data.user) {
+    show("Email ou mot de passe incorrect");
+    return;
+  }
 
-document.getElementById("btnRegister").addEventListener("click", async () => {
-  const { error } = await supabaseClient.auth.signUp({
-    email: email.value,
-    password: password.value
-  });
+  const authId = data.user.id;
 
-  if (error) msg.textContent = error.message;
-  else msg.textContent = "Compte créé ✔";
+  /* 2️⃣ Vérification table users */
+  const { data: profile, error: dbError } = await supabase
+    .from("users")
+    .select("role, status")
+    .eq("auth_id", authId)
+    .single();
+
+  if (dbError || !profile) {
+    await supabase.auth.signOut();
+    show("Compte non reconnu par l’administration DGPE");
+    return;
+  }
+
+  /* 3️⃣ Statut */
+  if (profile.status !== "ACTIF") {
+    await supabase.auth.signOut();
+    show("Compte en attente de validation DGPE");
+    return;
+  }
+
+  /* 4️⃣ OK */
+  show("Connexion réussie ✔", "success");
+
+  setTimeout(() => {
+    window.location.href = "dashboard.html";
+  }, 600);
 });
 </script>
 
