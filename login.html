@@ -9,25 +9,15 @@
 
 <body class="login-page">
 
-<!-- ================= NAVBAR ================= -->
+<!-- NAVBAR -->
 <div class="navbar-login">
   <div class="wrap">
-    <div class="logo-group">
-      <img src="assets/img/dgpe-logo.png" class="logo" alt="DGPE">
-      <span class="brand">e-Learning</span>
-    </div>
+    <img src="assets/img/dgpe-logo.png" class="logo" alt="DGPE">
+    <span class="brand">e-Learning</span>
   </div>
 </div>
 
-<!-- ================= HERO ================= -->
-<section class="hero">
-  <div class="hero-overlay">
-    <h1 class="hero-title">Connexion</h1>
-    <p class="hero-subtitle">Accédez à vos cours et à votre tableau de bord</p>
-  </div>
-</section>
-
-<!-- ================= LOGIN CARD ================= -->
+<!-- LOGIN -->
 <div class="login-wrap">
   <div class="login-card">
     <h2>Se connecter</h2>
@@ -50,41 +40,28 @@
 © 2025 DGPE – Direction Générale du Portefeuille de l’État
 </footer>
 
-<!-- ================= SUPABASE ================= -->
+<!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-/* =====================================================
-   CONFIG – NE PAS MODIFIER
-===================================================== */
+/* ================= CONFIG ================= */
 const SUPABASE_URL = "https://rwjyxmzdwdddjaeghpae.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3anl4bXpkd2RkZGphZWdocGFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxMjk5OTQsImV4cCI6MjA4MTcwNTk5NH0.ByhiCOu5LvPIb-0iSqhWSNlInvPCls0GxEsxULF2LMA";
+const SUPABASE_ANON_KEY =
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3anl4bXpkd2RkZGphZWdocGFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxMjk5OTQsImV4cCI6MjA4MTcwNTk5NH0.ByhiCOu5LvPIb-0iSqhWSNlInvPCls0GxEsxULF2LMA";
 
-/* =====================================================
-   INIT SUPABASE
-===================================================== */
 const supabaseClient = supabase.createClient(
   SUPABASE_URL,
-  SUPABASE_ANON_KEY,
-  { auth: { persistSession: true } }
+  SUPABASE_ANON_KEY
 );
 
-/* =====================================================
-   UI
-===================================================== */
+/* ================= UI ================= */
 const msg = document.getElementById("msg");
-
-function show(text, type="info") {
+function show(text, ok=false){
   msg.textContent = text;
-  msg.style.color =
-    type === "error" ? "#c62828" :
-    type === "success" ? "#2e7d32" :
-    "#111";
+  msg.style.color = ok ? "#2e7d32" : "#c62828";
 }
 
-/* =====================================================
-   LOGIN
-===================================================== */
+/* ================= LOGIN ================= */
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -92,26 +69,31 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   const password = document.getElementById("password").value.trim();
 
   if (!email || !password) {
-    show("❌ Email et mot de passe requis.", "error");
+    show("Email et mot de passe requis");
     return;
   }
 
-  show("⏳ Connexion en cours...");
+  show("Connexion en cours...");
 
-  // Authentification avec Supabase
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  const { data, error } =
+    await supabaseClient.auth.signInWithPassword({ email, password });
 
-  if (error || !data?.user) {
-    show("❌ Identifiants incorrects.", "error");
+  if (error) {
+    show(error.message);
     return;
   }
 
-  show("✅ Connexion réussie. Redirection...", "success");
+  if (!data?.user) {
+    show("Connexion refusée");
+    return;
+  }
 
-  // Délai avant redirection pour que le message apparaisse
-  setTimeout(() => {
-    window.location.href = "https://dgpe-hub.github.io/DGPE-E-LEARNING-PLATFORM/dashboard.html";
-  }, 1000); // 1 seconde de délai pour voir le message
+  show("Connexion réussie. Redirection...", true);
+
+  // 🔥 REDIRECTION SIMPLE, DIRECTE, SANS DÉLAI
+  window.location.assign(
+    "https://dgpe-hub.github.io/DGPE-E-LEARNING-PLATFORM/dashboard.html"
+  );
 });
 </script>
 
