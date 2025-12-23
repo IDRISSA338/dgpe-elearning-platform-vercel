@@ -20,8 +20,8 @@
 
 <section class="hero">
   <div class="hero-overlay">
-    <h1>Connexion</h1>
-    <p>Accédez à vos cours et à votre tableau de bord</p>
+    <h1 class="hero-title">Connexion</h1>
+    <p class="hero-subtitle">Accédez à vos cours et à votre tableau de bord</p>
   </div>
 </section>
 
@@ -31,52 +31,73 @@
 
     <form id="loginForm">
       <label>Email</label>
-      <input id="email" type="email" required>
+      <input id="email" class="input" type="email" required>
 
       <label>Mot de passe</label>
-      <input id="password" type="password" required>
+      <input id="password" class="input" type="password" required>
 
       <button type="submit" class="btn btn-primary">Connexion</button>
     </form>
 
-    <p id="msg"></p>
+    <p id="msg" style="margin-top:12px;font-weight:600"></p>
   </div>
 </div>
 
+<footer class="footer">© 2025 DGPE – Direction Générale du Portefeuille de l’État</footer>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
-const BASE_PATH = "/DGPE-E-LEARNING-PLATFORM/";
+/* ✅ BASE PATH AUTO (marche GitHub Pages + local) */
+const BASE_PATH = location.pathname.replace(/[^\/]+$/, ""); // dossier courant
 
-const supabaseClient = supabase.createClient(
-  "https://rwjyxmzdwdddjaeghpae.supabase.co",
-  "TA_CLE_ANON_PUBLIQUE",
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: false,
-      storage: window.localStorage
-    }
-  }
-);
+/* ✅ SUPABASE (DOIT ÊTRE IDENTIQUE PARTOUT) */
+const SUPABASE_URL = "https://rwjyxmzdwdddjaeghpae.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3anl4bXpkd2RkZGphZWdocGFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxMjk5OTQsImV4cCI6MjA4MTcwNTk5NH0.ByhiCOu5LvPIb-0iSqhWSNlInvPCls0GxEsxULF2LMA";
 
+const msg = document.getElementById("msg");
+function show(text, type="info"){
+  msg.textContent = text;
+  msg.style.color = type==="error" ? "#c62828" : type==="success" ? "#2e7d32" : "#111";
+}
+
+/* ✅ Affiche les erreurs JS dans la page */
+window.addEventListener("error", (e) => {
+  show("❌ Erreur JS : " + (e.message || e.type), "error");
+});
+
+/* ✅ Vérifie que supabase est chargé */
+if (!window.supabase) {
+  show("❌ Supabase SDK non chargé (internet / bloqueur).", "error");
+}
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storage: window.localStorage }
+});
+
+/* ✅ LOGIN */
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const email = email.value.trim();
-  const password = password.value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
+  if (!email || !password) return show("❌ Remplis email + mot de passe.", "error");
 
-  if (error) {
-    document.getElementById("msg").textContent = error.message;
-    return;
-  }
+  show("⏳ Connexion en cours...");
 
-  // 🔥 REDIRECTION DIRECTE
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+  if (error) return show("❌ " + error.message, "error");
+  if (!data?.user) return show("❌ Connexion refusée.", "error");
+
+  // 🔥 IMPORTANT : vérifier la session immédiatement
+  const { data: s } = await supabaseClient.auth.getSession();
+  if (!s?.session) return show("❌ Session non sauvegardée (cookies/storage bloqués).", "error");
+
+  show("✅ Connecté. Redirection...", "success");
+
+  // ✅ Redirection sûre
   window.location.href = BASE_PATH + "dashboard.html";
 });
 </script>
