@@ -36,7 +36,7 @@
   <div class="login-card">
     <h2>Se connecter</h2>
 
-    <!-- 🔒 FORM -->
+    <!-- FORM -->
     <form id="loginForm">
       <label>Email</label>
       <input id="email" class="input" type="email" required>
@@ -84,6 +84,7 @@ const supabaseClient = supabase.createClient(
 
 /* ================= UI ================= */
 const msg = document.getElementById("msg");
+
 function showMsg(text, type="info") {
   msg.textContent = text;
   msg.style.color =
@@ -95,9 +96,7 @@ function showMsg(text, type="info") {
 
 /* ================= LOGIN ================= */
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault(); // 🔥 CRUCIAL
-
-  console.log("🔐 Tentative de connexion");
+  e.preventDefault(); // ⛔ empêche le rechargement
 
   const email = document.getElementById("email").value.trim().toLowerCase();
   const password = document.getElementById("password").value.trim();
@@ -112,8 +111,6 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   const { data, error } =
     await supabaseClient.auth.signInWithPassword({ email, password });
 
-  console.log("AUTH RESULT:", data, error);
-
   if (error || !data.user) {
     showMsg("❌ Email ou mot de passe incorrect.", "error");
     return;
@@ -127,9 +124,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     .eq("auth_id", authId)
     .single();
 
-  console.log("PROFILE:", profile, profileError);
-
-  if (!profile || profileError) {
+  if (profileError || !profile) {
     showMsg("⛔ Compte non autorisé DGPE.", "error");
     return;
   }
@@ -143,7 +138,9 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 
   setTimeout(() => {
     window.location.href =
-      profile.role === "ADMIN" ? "admin.html" : "dashboard.html";
+      profile.role === "ADMIN"
+        ? "/DGPE-E-LEARNING-PLATFORM/admin.html"
+        : "/DGPE-E-LEARNING-PLATFORM/dashboard.html";
   }, 600);
 });
 
