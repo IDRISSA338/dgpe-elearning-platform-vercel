@@ -2,15 +2,17 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Dashboard – DGPE</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
+<!-- ================= NAVBAR ================= -->
 <header class="navbar">
   <div class="wrap">
-    <img src="assets/img/dgpe-logo.png" class="logo">
+    <img src="assets/img/dgpe-logo.png" class="logo" alt="DGPE">
     <span class="brand">e-Learning</span>
 
     <nav class="nav hidden" id="nav-private">
@@ -22,40 +24,57 @@
   </div>
 </header>
 
+<!-- ================= MAIN ================= -->
 <main class="page">
   <section class="panel">
     <h2>Tableau de bord</h2>
-    <p>Bienvenue sur la plateforme DGPE.</p>
+    <p id="welcome">Chargement…</p>
   </section>
 </main>
 
 <footer class="footer">
-  © 2025 DGPE
+  © 2025 DGPE – Direction Générale du Portefeuille de l’État
 </footer>
 
+<!-- ================= SUPABASE ================= -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
+/* ================= CONFIG SUPABASE (IDENTIQUE AU LOGIN) ================= */
+const SUPABASE_URL = "https://rwjyxmzdwdddjaeghpae.supabase.co";
+const SUPABASE_ANON_KEY =
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3anl4bXpkd2RkZGphZWdocGFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxMjk5OTQsImV4cCI6MjA4MTcwNTk5NH0.ByhiCOu5LvPIb-0iSqhWSNlInvPCls0GxEsxULF2LMA";
+
 const supabaseClient = supabase.createClient(
-  "https://hrriedjmpwjfmfimqlmx.supabase.co",
-  "sb_publishable_1AnZMUSy3A4X8xIrKJOKQw_cOX40j9V"
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
 );
 
-(async ()=>{
-  const { data:{ user } } = await supabaseClient.auth.getUser();
+/* ================= AUTH GUARD ================= */
+(async () => {
+  const { data, error } = await supabaseClient.auth.getUser();
 
-  /* 🔐 REDIRECTION ICI SEULEMENT */
-  if(!user){
+  console.log("SESSION USER:", data?.user);
+
+  if (error || !data?.user) {
     location.replace("login.html");
     return;
   }
 
+  // Affichage menu privé
   document.getElementById("nav-private").classList.remove("hidden");
+
+  // Message bienvenue
+  document.getElementById("welcome").textContent =
+    "Bienvenue " + (data.user.email || "");
 })();
 
-document.getElementById("logout").onclick = async ()=>{
+/* ================= LOGOUT ================= */
+document.getElementById("logout").addEventListener("click", async (e) => {
+  e.preventDefault();
   await supabaseClient.auth.signOut();
   location.replace("login.html");
-};
+});
 </script>
 
 </body>
